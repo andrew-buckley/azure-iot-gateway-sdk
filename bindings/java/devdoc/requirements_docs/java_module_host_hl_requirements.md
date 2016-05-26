@@ -77,11 +77,11 @@ The JVM options to be used when creating the JVM. Specify the version, debug opt
 
 **SRS_JAVA_MODULE_HOST_HL_14_002: [** This function shall return `NULL` if `bus` is `NULL` or `configuration` is `NULL`. **]**
 
-**SRS_JAVA_MODULE_HOST_HL_14_003: [** This function shall return `NULL` if `configuration` is not a vlid JSON object. **]**
+**SRS_JAVA_MODULE_HOST_HL_14_003: [** This function shall return `NULL` if `configuration` is not a valid JSON object. **]**
 
-**SRS_JAVA_MODULE_HOST_HL_14_004: [** This function shall return `NULL` if `configuration` does not contain a field named `class_name`. **]**
+**SRS_JAVA_MODULE_HOST_HL_14_004: [** This function shall return `NULL` if `configuration.args` does not contain a field named `class_name`. **]**
 
-**SRS_JAVA_MODULE_HOST_HL_14_005: [** This function shall parse the `configuration` JSON object and initialize a new `JAVA_MODULE_HOST_CONFIG` setting default values to all missing fields. **]**
+**SRS_JAVA_MODULE_HOST_HL_14_005: [** This function shall parse the `configuration.args` JSON object and initialize a new `JAVA_MODULE_HOST_CONFIG` setting default values to all missing fields. **]**
 
 **SRS_JAVA_MODULE_HOST_HL_14_006: [** This function shall pass `bus` and the newly created `JAVA_MODULE_HOST_CONFIG` structure to `JavaModuleHost_Create`. **]**
 

@@ -51,7 +51,7 @@ This is the primary public interface for the module. It returns a pointer to the
 `MODULE_APIS` structure containing the implementation functions for this module.
 The following functions are the implementation of those APIs.
 
-**SRS_JAVA_MODULE_HOST_14_029: [** This function shall return a
+**SRS_JAVA_MODULE_HOST_14_028: [** This function shall return a
 non-`NULL` pointer to a structure of type `MODULE_APIS` that has all
 fields non-`NULL`. **]**
 
@@ -70,65 +70,61 @@ pointer to a `JAVA_MODULE_HOST_CONFIG` structure.
 `NULL` if `configuration` is `NULL`. **]**
 
 **SRS_JAVA_MODULE_HOST_14_003: [** This function shall return
-`NULL` if `configuration->configuration_json` is not valid JSON.
-**]**
-
-**SRS_JAVA_MODULE_HOST_14_004: [** This function shall return
 `NULL` if `class_name` is `NULL`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_005: [** This function shall return
+**SRS_JAVA_MODULE_HOST_14_004: [** This function shall return
 `NULL` upon any underlying API call failure. **]**
 
-**SRS_JAVA_MODULE_HOST_14_006: [** This function shall return a
-non-**`NULL MODULE_HANDLE` **when successful. **]**
+**SRS_JAVA_MODULE_HOST_14_005: [** This function shall return a
+non-`NULL` `MODULE_HANDLE` when successful. **]**
 
-**SRS_JAVA_MODULE_HOST_14_007: [** This function shall allocate memory
-for an instance of a `JAVA_MODULE_HANDLE` structure to be used as
+**SRS_JAVA_MODULE_HOST_14_006: [** This function shall allocate memory
+for an instance of a `JAVA_MODULE_HANDLE_DATA` structure to be used as
 the backing structure for this module. **]**
 
-**SRS_JAVA_MODULE_HOST_14_008: [** This function shall initize a**
-`JavaVMInitArgs` **structure using the `JVM_OPTIONS` **structure**
+**SRS_JAVA_MODULE_HOST_14_007: [** This function shall initialize a
+`JavaVMInitArgs` structure using the `JVM_OPTIONS` structure
 `configuration->options`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_009: [** If `configuration->options`
+**SRS_JAVA_MODULE_HOST_14_008: [** If `configuration->options`
 is `NULL`**,** `JavaVMInitArgs` shall be initialized using default
 values. **]**
 
-**SRS_JAVA_MODULE_HOST_14_010: [** This function shall allocate memory
+**SRS_JAVA_MODULE_HOST_14_009: [** This function shall allocate memory
 for an array of `JavaVMOption` structures and initialize each with
 each option provided. **]**
 
-**SRS_JAVA_MODULE_HOST_14_011: [** If this is the first Java module to
+**SRS_JAVA_MODULE_HOST_14_010: [** If this is the first Java module to
 load, this function shall create the JVM using the `JavaVMInitArgs`
 through a call to `JNI_CreateJavaVM` and save the JavaVM and JNIEnv
-pointers in the `JAVA_MODULE_HANDLE`. **]**
+pointers in the `JAVA_MODULE_HANDLE_DATA`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_012: [** If the JVM was previously created, the
+**SRS_JAVA_MODULE_HOST_14_011: [** If the JVM was previously created, the
 function shall get a pointer to that `JavaVM` pointer and `JNIEnv`
 environment pointer. **]**
 
-**SRS_JAVA_MODULE_HOST_14_013: [** This function shall increment the
+**SRS_JAVA_MODULE_HOST_14_012: [** This function shall increment the
 `JAVA_MODULE_COUNT` global variable. **]**
 
-**SRS_JAVA_MODULE_HOST_14_014: [** This function shall return
+**SRS_JAVA_MODULE_HOST_14_013: [** This function shall return
 `NULL` if a JVM could not be created or found. **]**
 
-**SRS_JAVA_MODULE_HOST_14_015: [** This function shall find the
+**SRS_JAVA_MODULE_HOST_14_014: [** This function shall find the
 `MessageBus` Java class, get the constructor, and create a `MessageBus`
 Java object. **]**
 
-**SRS_JAVA_MODULE_HOST_14_016: [** This function shall find the
+**SRS_JAVA_MODULE_HOST_14_015: [** This function shall find the
 user-defined Java module class using `configuration->class_name`,
 get the constructor, and create an instance of this module object. **]**
 
-**SRS_JAVA_MODULE_HOST_14_017: [** This function shall return
+**SRS_JAVA_MODULE_HOST_14_016: [** This function shall return
 `NULL` if any returned `jclass`, `jmethodID`, or `jobject` is
 `NULL`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_018: [** This function shall return
+**SRS_JAVA_MODULE_HOST_14_017: [** This function shall return
 `NULL` if any JNI function fails. **]**
 
-**SRS_JAVA_MODULE_HOST_14_019: [** The function shall save a new global
+**SRS_JAVA_MODULE_HOST_14_018: [** The function shall save a new global
 reference to the Java module object in
 `JAVA_MODULE_HANDLE_DATA->module`. **]**
 
@@ -137,17 +133,17 @@ reference to the Java module object in
 static void JavaModuleHost_Destroy(MODULE_HANDLE module);
 ```
 
-**SRS_JAVA_MODULE_HOST_14_020: [** This function shall do nothing if
+**SRS_JAVA_MODULE_HOST_14_019: [** This function shall do nothing if
 `module` is `NULL`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_021: [** This function shall call the
+**SRS_JAVA_MODULE_HOST_14_020: [** This function shall call the
 `void destroy()` method of the Java module object and delete the global
 reference to this object. **]**
 
-**SRS_JAVA_MODULE_HOST_14_022: [** This function shall free all resources
+**SRS_JAVA_MODULE_HOST_14_021: [** This function shall free all resources
 associated with this module. **]**
 
-**SRS_JAVA_MODULE_HOST_14_030: [** This function shall destroy the JVM if 
+**SRS_JAVA_MODULE_HOST_14_029: [** This function shall destroy the JVM if 
 it the last module to be disconnected from the gateway. **]**
 
 ##JavaModuleHost_Receive
@@ -155,13 +151,13 @@ it the last module to be disconnected from the gateway. **]**
 static void JavaModuleHost_Receive(MODULE_HANDLE module, MESSAGE_HANDLE message);
 ```
 
-**SRS_JAVA_MODULE_HOST_14_023: [** This function shall do nothing if
+**SRS_JAVA_MODULE_HOST_14_022: [** This function shall do nothing if
 `module` or `message` is `NULL`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_024: [** This function shall serialize
+**SRS_JAVA_MODULE_HOST_14_023: [** This function shall serialize
 `message`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_025: [** This function shall call the
+**SRS_JAVA_MODULE_HOST_14_024: [** This function shall call the
 `void receive(byte[] source)` method of the Java module object passing the
 serialized `message`. **]**
 
@@ -170,12 +166,12 @@ serialized `message`. **]**
 JNIEXPORT jint JNICALL Java_com_microsoft_azure_gateway_core_MessageBus_publishMessage(JNIEnv *env, jobject MessageBus, jlong addr, jbyteArray message);
 ```
 
-**SRS_JAVA_MODULE_HOST_14_026: [** This function shall use convert the
+**SRS_JAVA_MODULE_HOST_14_025: [** This function shall use convert the
 `jbyteArray message` into an `unsigned char` array. **]**
 
-**SRS_JAVA_MODULE_HOST_14_027: [** This function shall use the serialized
+**SRS_JAVA_MODULE_HOST_14_026: [** This function shall use the serialized
 message in a call to `Message_Create`. **]**
 
-**SRS_JAVA_MODULE_HOST_14_028: [** This function shall publish the
+**SRS_JAVA_MODULE_HOST_14_027: [** This function shall publish the
 message to the `MESSAGE_BUS_HANDLE` addressed by `addr` and
 return the value of this function call. **]**
