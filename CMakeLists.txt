@@ -100,3 +100,5 @@ include_directories(${GW_INC})
 add_subdirectory(modules)
 
 add_subdirectory(samples)
+
+add_subdirectory(bindings)

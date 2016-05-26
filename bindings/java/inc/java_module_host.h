@@ -6,6 +6,7 @@
 
 #include <stdbool.h>
 #include <cstdbool>
+#include "azure_c_shared_utility\vector.h"
 #include "module.h"
 
 #ifdef __cplusplus
@@ -19,7 +20,7 @@ typedef struct JVM_OPTIONS_TAG
     bool debug;
     int debug_port;
     bool verbose;
-    void* additional_options;
+    VECTOR_HANDLE additional_options;
 } JVM_OPTIONS;
 
 typedef struct JAVA_MODULE_HOST_CONFIG_TAG
