@@ -40,25 +40,30 @@ set(java_module_host_hl_static_headers
 
 include_directories(./inc ${IOTHUB_CLIENT_INC_FOLDER})
 include_directories(${GW_INC})
-include_directories($ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
+
+if(WIN32)
+    include_directories($ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
+    link_directories($ENV{JAVA_HOME}/lib)
+    link_directories($ENV{JAVA_HOME}/jre/bin/client)
+endif()
 
 #this builds the java_module_host dynamic library
 add_library(java_module_host MODULE ${java_module_host_headers} ${java_module_host_sources})
-target_link_libraries(java_module_host gateway)
+target_link_libraries(java_module_host gateway $ENV{JAVA_HOME}/lib/jvm.lib)
 
 #this build the java_module_host static library
 add_library(java_module_host_static ${java_module_host_static_headers} ${java_module_host_static_sources})
 target_compile_definitions(java_module_host_static PRIVATE BUILD_MODULE_TYPE_STATIC)
-target_link_libraries(java_module_host_static gateway)
+target_link_libraries(java_module_host_static gateway $ENV{JAVA_HOME}/lib/jvm.lib)
 
 #this builds the java_module_host_hl dynamic library (by default it uses java_module_host linked statically)
 add_library(java_module_host_hl MODULE ${java_module_host_hl_headers} ${java_module_host_hl_sources})
-target_link_libraries(java_module_host_hl gateway)
+target_link_libraries(java_module_host_hl gateway $ENV{JAVA_HOME}/lib/jvm.lib)
 
 #this builds the java_module_host_hl static library (by default it uses the java_module_host linked statically)
 add_library(java_module_host_hl_static ${java_module_host_hl_static_headers} ${java_module_host_hl_static_sources})
 target_compile_definitions(java_module_host_hl_static PRIVATE BUILD_MODULE_TYPE_STATIC)
-target_link_libraries(java_module_host_hl_static gateway)
+target_link_libraries(java_module_host_hl_static gateway $ENV{JAVA_HOME}/lib/jvm.lib)
 
 linkSharedUtil(java_module_host)
 linkSharedUtil(java_module_host_static)

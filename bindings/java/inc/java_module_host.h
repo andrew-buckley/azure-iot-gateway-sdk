@@ -14,6 +14,8 @@ extern "C"
 {
 #endif
 
+extern int JAVA_MODULE_COUNT;
+
 typedef struct JVM_OPTIONS_TAG
 {
 	const char* class_path;
