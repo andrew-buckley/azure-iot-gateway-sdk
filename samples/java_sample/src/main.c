@@ -4,6 +4,7 @@
 #include <stdio.h>
 
 #include "gateway.h"
+//#include <vld.h>
 
 int main(int argc, char** argv)
 {

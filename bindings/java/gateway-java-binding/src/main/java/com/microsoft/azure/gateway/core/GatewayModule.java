@@ -6,6 +6,8 @@ package com.microsoft.azure.gateway.core;
 
 import com.microsoft.azure.gateway.messaging.Message;
 
+import java.io.IOException;
+
 /**
  * The Abstract Module class to be extended by the module-creator when creating any modules.
  */
@@ -43,6 +45,10 @@ public abstract class GatewayModule implements IGatewayModule{
 
     public void receive(byte[] serializedMessage){
         this.receive(new Message(serializedMessage));
+    }
+
+    public int publishMessage(Message message) throws IOException {
+        return this.bus.publishMessage(this, message);
     }
 
     //Public getter methods

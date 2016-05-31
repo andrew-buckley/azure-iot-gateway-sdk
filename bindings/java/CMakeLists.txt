@@ -10,6 +10,7 @@ set(java_module_host_sources
 
 set(java_module_host_headers
     ./inc/message_bus_proxy.h
+    ./inc/java_module_host_common.h
     ./inc/java_module_host.h
 )
 

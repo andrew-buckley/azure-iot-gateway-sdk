@@ -1,39 +1,37 @@
 {
-    "modules" :
-    [
-      {
-        "module name": "logger_hl",
-        "module path": "..\\..\\modules\\logger\\Debug\\logger_hl.dll",
-        "args": { "filename": "J:\\Projects\\gateway-fork\\samples\\java_sample\\log.txt" }
-      },
-      {
-            "module name":"BLE1",
-            "module path" : "..\\..\\modules\\simulated_device\\Debug\\simulated_device_hl.dll",
-            "args":
-            {
-                "macAddress" : "01:01:01:01:01:01"
-            }
+  "modules": [
+    {
+      "module name": "logger_hl",
+      "module path": "..\\..\\modules\\logger\\Debug\\logger_hl.dll",
+      "args": { "filename": "F:\\Projects\\gateway-fork\\samples\\java_sample\\log.txt" }
+    },
+    {
+      "module name": "BLE1",
+      "module path": "..\\..\\modules\\simulated_device\\Debug\\simulated_device_hl.dll",
+      "args": {
+        "macAddress": "01:01:01:01:01:01"
+      }
+    },
+    {
+      "module name": "java_module_host",
+      "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
+      "args": {
+        "class_path": "C:\\Users\\andbuc\\Desktop\\Tester\\target\\classes",
+        "library_path": "..\\..\\bindings\\java\\Debug",
+        "class_name": "Tester",
+        "args": {
+          "frequency": 30
         },
-        {
-            "module name" : "java_module_host",
-            "module path" : "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
-          "args": {
-            "class_path": "C:\\Users\\Andrew\\Desktop\\Tester\\target\\classes",
-            "library_path": "..\\..\\bindings\\java\\Debug\\java_module_host.dll",
-            "class_name": "Tester",
-            "args": {
-              "frequency": 30
-            },
-            "jvm_options": {
-              "version": 8,
-              "debug": true,
-              "debug_port": 8118,
-              "verbose": false,
-              "additional_options": [
-                "-Djava.version=1.8"
-              ]
-            }
-          }
+        "jvm_options": {
+          "version": 8,
+          "debug": false,
+          "debug_port": 8118,
+          "verbose": false,
+          "additional_options": [
+            "-Djava.version=1.8"
+          ]
         }
-    ]
+      }
+    }
+  ]
 }

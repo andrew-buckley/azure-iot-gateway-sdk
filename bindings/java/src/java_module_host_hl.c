@@ -66,10 +66,12 @@ static MODULE_HANDLE JavaModuleHost_HL_Create(MESSAGE_BUS_HANDLE bus, const void
 						LogError("Unable to create Java Module.");
 					}
 
+					//Cleanup
 					for (size_t index = 0; index < VECTOR_size(options.additional_options); index++)
 					{
-						STRING_delete(VECTOR_element(options.additional_options, index));
+						STRING_delete(*((STRING_HANDLE*)VECTOR_element(options.additional_options, index)));
 					}
+					free(config.configuration_json);
 					VECTOR_destroy(options.additional_options);
 				}
 			}
@@ -113,7 +115,7 @@ static void parse_jvm_options_internal(JAVA_MODULE_HOST_CONFIG* config, JSON_Obj
 		for (size_t index = 0; index < addition_options_count; index++) {
 			//TODO: Check each string
 			STRING_HANDLE str = STRING_construct(json_array_get_string(arr, index));
-			VECTOR_push_back(config->options->additional_options, str, 1);
+			VECTOR_push_back(config->options->additional_options, &str, 1);
 		}
 	}
 }

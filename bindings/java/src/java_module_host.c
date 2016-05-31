@@ -7,12 +7,10 @@
 #endif
 
 #include "message_bus_proxy.h"
+#include "java_module_host_common.h"
 #include "java_module_host.h"
 #include "azure_c_shared_utility\iot_logging.h"
-
-#define MESSAGE_BUS_CLASS_NAME "MessageBus"
-#define CONSTRUCTOR_METHOD_NAME "<init>"
-#define DEBUG_PORT_DEFAULT 9876
+#include <vld.h>
 
 #define JNIFunc(jptr, call, ...) (*(jptr))->call(jptr, __VA_ARGS__)
 
@@ -26,11 +24,11 @@ typedef struct JAVA_MODULE_HANDLE_DATA_TAG
 	char* moduleName;
 }JAVA_MODULE_HANDLE_DATA;
 
-static int JVM_Create(JavaVM**, JNIEnv*, JVM_OPTIONS*);
+static int JVM_Create(JavaVM**, JNIEnv**, JVM_OPTIONS*);
 static void JVM_Destroy(JavaVM**, JNIEnv*);
 static void destroy_module_internal(JAVA_MODULE_HANDLE_DATA*);
-static void init_vm_options(JavaVMInitArgs*, JVM_OPTIONS*);
-static void deinit_vm_options(JavaVMInitArgs*);
+static void init_vm_options(JavaVMInitArgs*, VECTOR_HANDLE*, JVM_OPTIONS*);
+static void deinit_vm_options(JavaVMInitArgs*, VECTOR_HANDLE);
 
 static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* configuration)
 {
@@ -63,9 +61,10 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 			}
 			else
 			{
+				result->moduleName = (char*)config->class_name;
 				/*Codes_SRS_JAVA_MODULE_HOST_14_006: [This function shall return NULL upon any underlying API call failure.]*/
 				/*Codes_SRS_JAVA_MODULE_HOST_14_007: [This function shall return a non-NULL MODULE_HANDLE when successful.]*/
-				if (JVM_Create(&(result->jvm), result->env, config->options) != JNI_OK)
+				if (JVM_Create(&(result->jvm), &(result->env), config->options) != JNI_OK)
 				{
 					/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall return NULL if a JVM could not be created or found.]*/
 					LogError("Failed to successfully create JVM.");
@@ -143,7 +142,7 @@ static void JavaModuleHost_Destroy(MODULE_HANDLE module)
 		JAVA_MODULE_HANDLE_DATA* moduleHandle = (JAVA_MODULE_HANDLE_DATA *)module;
 
 		/*Codes_SRS_JAVA_MODULE_HOST_14_020: [This function shall call the void destroy() method of the Java module object and delete the global reference to this object.]*/
-		JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(moduleHandle->env), NULL);
+		JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(&(moduleHandle->env)), NULL);
 		jclass jModule_class = JNIFunc(moduleHandle->env, GetObjectClass, moduleHandle->module);
 		jmethodID jModule_destroy = JNIFunc(moduleHandle->env, GetMethodID, jModule_class, "destroy", "()V");
 		JNIFunc(moduleHandle->env, CallVoidMethod, moduleHandle->module, jModule_destroy);
@@ -166,39 +165,63 @@ static void JavaModuleHost_Receive(MODULE_HANDLE module, MESSAGE_HANDLE message)
 
 		/*Codes_SRS_JAVA_MODULE_HOST_14_023: [This function shall serialize message.]*/
 		int32_t size;
-		const unsigned char* serialized_message = Message_ToByteArray(message, &size);
+		unsigned char* serialized_message = (unsigned char*)Message_ToByteArray(message, &size);
+		
+		/*Codes_SRS_JAVA_MODULE_HOST_14_024: [This function shall call the void receive(byte[] source) method of the Java module object passing the serialized message.]*/
+		JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(&(moduleHandle->env)), NULL);
+		
 		//TODO: error check
 		jbyteArray arr = JNIFunc(moduleHandle->env, NewByteArray, size);
 		JNIFunc(moduleHandle->env, SetByteArrayRegion, arr, 0, size, serialized_message);
 
-		/*Codes_SRS_JAVA_MODULE_HOST_14_024: [This function shall call the void receive(byte[] source) method of the Java module object passing the serialized message.]*/
-		JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(moduleHandle->env), NULL);
 		jclass jModule_class = JNIFunc(moduleHandle->env, GetObjectClass, moduleHandle->module);
 		jmethodID jModule_receive = JNIFunc(moduleHandle->env, GetMethodID, jModule_class, "receive", "([B)V");
 		JNIFunc(moduleHandle->env, CallVoidMethod, moduleHandle->module, jModule_receive, arr);
+		JNIFunc(moduleHandle->jvm, DetachCurrentThread);
 
-		//JNIFunc(moduleHandle->env, ReleaseByteArrayElements, arr, serialized_message, JNI_ABORT);
+		free(serialized_message);
 	}
 }
 
-JNIEXPORT jint JNICALL Java_com_microsoft_azure_gateway_core_MessageBus_publishMessage(JNIEnv* env, jobject jMessageBus, jlong bus, jbyteArray serialized_message)
+JNIEXPORT jint JNICALL Java_com_microsoft_azure_gateway_core_MessageBus_publishMessage(JNIEnv* env, jobject jMessageBus, jlong module_address, jlong bus_address, jbyteArray serialized_message)
 {
+	MESSAGE_BUS_RESULT result = MESSAGE_BUS_ERROR;
+
+	MESSAGE_BUS_HANDLE bus = (MESSAGE_BUS_HANDLE)bus_address;
+	JAVA_MODULE_HANDLE_DATA* moduleHandle = (JAVA_MODULE_HANDLE_DATA*)module_address;
+
+	JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(&(moduleHandle->env)), NULL);
+
 	/*Codes_SRS_JAVA_MODULE_HOST_14_025: [This function shall use convert the jbyteArray message into an unsigned char array.]*/
+	size_t length = JNIFunc(moduleHandle->env, GetArrayLength, serialized_message);
+	unsigned char* arr = (unsigned char*)malloc(length);
+	JNIFunc(moduleHandle->env, GetByteArrayRegion, serialized_message, 0, length, arr);
+	JNIFunc(moduleHandle->jvm, DetachCurrentThread);
+
 	/*Codes_SRS_JAVA_MODULE_HOST_14_026: [This function shall use the serialized message in a call to Message_Create.]*/
+	MESSAGE_HANDLE message = Message_CreateFromByteArray(arr, length);
+
 	/*Codes_SRS_JAVA_MODULE_HOST_14_027: [This function shall publish the message to the MESSAGE_BUS_HANDLE addressed by addr and return the value of this function call.]*/
-	return 0;
+	result = MessageBus_Publish(bus, message);
+
+	//Cleanup
+	free(arr);
+	Message_Destroy(message);
+
+	return result;
+	
 }
 
 //Internal functions
-static int JVM_Create(JavaVM** jvm, JNIEnv* env, JVM_OPTIONS* options)
+static int JVM_Create(JavaVM** jvm, JNIEnv** env, JVM_OPTIONS* options)
 {
 	/*Codes_SRS_JAVA_MODULE_HOST_14_009: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options.]*/
 	JavaVMInitArgs jvm_args;
 	VECTOR_HANDLE options_strings;
-	init_vm_options(&jvm_args, options);
+	init_vm_options(&jvm_args, &options_strings, options);
 
 	/*Codes_SRS_JAVA_MODULE_HOST_14_012: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA.]*/
-	int result = JNI_CreateJavaVM(jvm, (void**)&env, &jvm_args);
+	int result = JNI_CreateJavaVM(jvm, (void**)env, &jvm_args);
 
 	/*Codes_SRS_JAVA_MODULE_HOST_14_013: [If the JVM was previously created, the function shall get a pointer to that JavaVM pointer and JNIEnv environment pointer.]*/
 	if (result == JNI_EEXIST)
@@ -207,11 +230,11 @@ static int JVM_Create(JavaVM** jvm, JNIEnv* env, JVM_OPTIONS* options)
 		result = JNI_GetCreatedJavaVMs(jvm, 1, &vmCount);
 		if (result == JNI_OK)
 		{
-			JNIFunc(*jvm, GetEnv, (void**)&env, jvm_args.version);
+			JNIFunc(*jvm, GetEnv, (void**)env, jvm_args.version);
 		}
 	}
 
-	if (result < 0 || !env)
+	if (result < 0 || !(*env))
 	{
 		/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall return NULL if a JVM could not be created or found.]*/
 		/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
@@ -224,7 +247,7 @@ static int JVM_Create(JavaVM** jvm, JNIEnv* env, JVM_OPTIONS* options)
 	}
 
 	//Free up any memory used when initializing the JavaVMInitArgs
-	deinit_vm_options(&jvm_args);
+	deinit_vm_options(&jvm_args, options_strings);
 
 	return result;
 }
@@ -234,10 +257,9 @@ static void JVM_Destroy(JavaVM** jvm, JNIEnv* env)
 	JNIFunc(*jvm, AttachCurrentThread, (void**)&env, NULL);
 	//TODO: Catch return
 	JNIFunc(*jvm, DestroyJavaVM);
-	JNIFunc(*jvm, DetachCurrentThread);
 }
 
-static void init_vm_options(JavaVMInitArgs* jvm_args, JVM_OPTIONS* jvm_options)
+static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_strings, JVM_OPTIONS* jvm_options)
 {
 	if (jvm_options == NULL)
 	{
@@ -248,6 +270,8 @@ static void init_vm_options(JavaVMInitArgs* jvm_args, JVM_OPTIONS* jvm_options)
 	}
 	else
 	{
+		*options_strings = VECTOR_create(sizeof(STRING_HANDLE));
+
 		/*Codes_SRS_JAVA_MODULE_HOST_14_011: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided.]*/
 		int options_count = 0;
 
@@ -287,39 +311,60 @@ static void init_vm_options(JavaVMInitArgs* jvm_args, JVM_OPTIONS* jvm_options)
 		//Set all options
 		if (jvm_options->class_path != NULL)
 		{
-			char* cp = (char*)malloc(strlen("-Djava.class.path") + 1 + strlen(jvm_options->class_path) + 1);
-			sprintf(cp, "%s=%s", "-Djava.class.path", jvm_options->class_path);
-			options[--options_count].optionString = cp;
+			char* cp = (char*)malloc(strlen("-Djava.class.path") + 1 + strlen(DEFAULT_CLASS_PATH) + 1 + strlen(jvm_options->class_path) + 1);
+			sprintf(cp, "%s=%s;%s", "-Djava.class.path", DEFAULT_CLASS_PATH, jvm_options->class_path);
+			STRING_HANDLE class_path = STRING_construct(cp);
+			VECTOR_push_back(*options_strings, &class_path, 1);
+			options[--options_count].optionString = (char*)STRING_c_str(class_path);
+			free(cp);
 		}
 		if (jvm_options->library_path != NULL)
 		{
 			char* lp = (char*)malloc(strlen("-Djava.library.path") + 1 + strlen(jvm_options->library_path) + 1);
 			sprintf(lp, "%s=%s", "-Djava.library.path", jvm_options->library_path);
-			options[--options_count].optionString = lp;
+			STRING_HANDLE library_path = STRING_construct(lp);
+			VECTOR_push_back(*options_strings, &library_path, 1);
+			options[--options_count].optionString = (char*)STRING_c_str(library_path);
+			free(lp);
 		}
 		if (jvm_options->debug == 1) {
 			char *debug_str = (char*)malloc(strlen("-Xrunjdwp:transport=dt_socket,address=0000,server=y,suspend=y") + 2);
 			sprintf(debug_str, "-Xrunjdwp:transport=dt_socket,address=%i,server=y,suspend=y", jvm_options->debug_port != 0 ? jvm_options->debug_port : DEBUG_PORT_DEFAULT);
-			options[--options_count].optionString = "-Xrs";
-			options[--options_count].optionString = "-Xdebug";
-			options[--options_count].optionString = debug_str;
+			STRING_HANDLE debug_1 = STRING_construct("-Xrs");
+			STRING_HANDLE debug_2 = STRING_construct("-Xdebug");
+			STRING_HANDLE debug_3 = STRING_construct(debug_str);
+			VECTOR_push_back(*options_strings, &debug_1, 1);
+			VECTOR_push_back(*options_strings, &debug_2, 1);
+			VECTOR_push_back(*options_strings, &debug_3, 1);
+			options[--options_count].optionString = (char*)STRING_c_str(debug_1);
+			options[--options_count].optionString = (char*)STRING_c_str(debug_2);
+			options[--options_count].optionString = (char*)STRING_c_str(debug_3);
+			free(debug_str);
 		}
 		if (jvm_options->verbose == 1) {
-			options[--options_count].optionString = "-verbose:jni";
+			STRING_HANDLE verbose_str = STRING_construct("-verbose:class");
+			VECTOR_push_back(*options_strings, &verbose_str, 1);
+			options[--options_count].optionString = (char*)STRING_c_str(verbose_str);
 		}
 		if (jvm_options->additional_options != NULL) {
 			for (size_t opt_index = 0; opt_index < VECTOR_size(jvm_options->additional_options); ++opt_index) {
-				options[--options_count].optionString = (char*)STRING_c_str(VECTOR_element(jvm_options->additional_options, opt_index));
+				STRING_HANDLE str = STRING_construct(STRING_c_str(*((STRING_HANDLE*)VECTOR_element(jvm_options->additional_options, opt_index))));
+				VECTOR_push_back(*options_strings, &str, 1);
+				options[--options_count].optionString = (char*)STRING_c_str(str);
 			}
 		}
 	}
 }
 
-static void deinit_vm_options(JavaVMInitArgs* jvm_args)
+static void deinit_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE options_strings)
 {
-	for (jint options_count = 0; options_count < jvm_args->nOptions; options_count++)
+	if (options_strings != NULL)
 	{
-		free((*jvm_args).options[options_count].optionString);
+		for (size_t options_count = 0; options_count < VECTOR_size(options_strings); options_count++)
+		{
+			STRING_delete(*((STRING_HANDLE*)VECTOR_element(options_strings, options_count)));
+		}
+		VECTOR_destroy(options_strings);
 	}
 	free((*jvm_args).options);
 }
@@ -331,7 +376,6 @@ static void destroy_module_internal(JAVA_MODULE_HANDLE_DATA* module)
 	{
 		JVM_Destroy(&(module->jvm), module->env);
 	}
-	free(module->moduleName);
 	free(module);
 }
 

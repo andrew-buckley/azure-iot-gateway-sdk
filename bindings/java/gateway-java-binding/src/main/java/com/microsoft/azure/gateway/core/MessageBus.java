@@ -6,6 +6,8 @@ package com.microsoft.azure.gateway.core;
 
 import com.microsoft.azure.gateway.messaging.Message;
 
+import java.io.IOException;
+
 public class MessageBus {
 
     //Loads the native library
@@ -18,9 +20,24 @@ public class MessageBus {
      * Native MessageBus_Publish function. When this method is called, it will call into the native MessageBus_Publish
      * function to publish the provided {@link Message} onto the MessageBus.
      *
-     * @param addr The address of the pointer to the native MessageBus.
+     * @param moduleAddr The address of the pointer to the native module host
+     * @param busAddr The address of the pointer to the native MessageBus.
      * @param message The serialized {@link Message} to be published.
      * @return 0 on success, non-zero otherwise.
      */
-    private native int publishMessage(long addr, byte[] message);
+    private native int publishMessage(long moduleAddr, long busAddr, byte[] message);
+
+    private long _busAddr;
+
+    public MessageBus(long addr){
+        this._busAddr = addr;
+    }
+
+    public int publishMessage(GatewayModule module, Message message) throws IOException {
+        return this.publishMessage(module.getAddress(), this._busAddr, message.toByteArray());
+    }
+
+    public long getAddress(){
+        return this._busAddr;
+    }
 }
