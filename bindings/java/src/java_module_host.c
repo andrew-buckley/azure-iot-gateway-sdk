@@ -137,12 +137,12 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 
 static void JavaModuleHost_Destroy(MODULE_HANDLE module)
 {
-	/*SRS_JAVA_MODULE_HOST_14_019: [This function shall do nothing if module is NULL.]*/
+	/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall do nothing if module is NULL.]*/
 	if (module != NULL)
 	{
 		JAVA_MODULE_HANDLE_DATA* moduleHandle = (JAVA_MODULE_HANDLE_DATA *)module;
 
-		/*SRS_JAVA_MODULE_HOST_14_020: [This function shall call the void destroy() method of the Java module object and delete the global reference to this object.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_020: [This function shall call the void destroy() method of the Java module object and delete the global reference to this object.]*/
 		JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(moduleHandle->env), NULL);
 		jclass jModule_class = JNIFunc(moduleHandle->env, GetObjectClass, moduleHandle->module);
 		jmethodID jModule_destroy = JNIFunc(moduleHandle->env, GetMethodID, jModule_class, "destroy", "()V");
@@ -151,27 +151,27 @@ static void JavaModuleHost_Destroy(MODULE_HANDLE module)
 		JNIFunc(moduleHandle->env, DeleteGlobalRef, moduleHandle->module);
 		JNIFunc(moduleHandle->jvm, DetachCurrentThread);
 
-		/*SRS_JAVA_MODULE_HOST_14_029: [This function shall destroy the JVM if it the last module to be disconnected from the gateway.]*/
-		/*SRS_JAVA_MODULE_HOST_14_021: [This function shall free all resources associated with this module.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_029: [This function shall destroy the JVM if it the last module to be disconnected from the gateway.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_021: [This function shall free all resources associated with this module.]*/
 		destroy_module_internal(moduleHandle);
 	}
 }
 
 static void JavaModuleHost_Receive(MODULE_HANDLE module, MESSAGE_HANDLE message)
 {
-	/*SRS_JAVA_MODULE_HOST_14_022: [This function shall do nothing if module or message is NULL.]*/
+	/*Codes_SRS_JAVA_MODULE_HOST_14_022: [This function shall do nothing if module or message is NULL.]*/
 	if (module != NULL && message != NULL)
 	{
 		JAVA_MODULE_HANDLE_DATA* moduleHandle = (JAVA_MODULE_HANDLE_DATA*)module;
 
-		/*SRS_JAVA_MODULE_HOST_14_023: [This function shall serialize message.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_023: [This function shall serialize message.]*/
 		int32_t size;
 		const unsigned char* serialized_message = Message_ToByteArray(message, &size);
 		//TODO: error check
 		jbyteArray arr = JNIFunc(moduleHandle->env, NewByteArray, size);
 		JNIFunc(moduleHandle->env, SetByteArrayRegion, arr, 0, size, serialized_message);
 
-		/*SRS_JAVA_MODULE_HOST_14_024: [This function shall call the void receive(byte[] source) method of the Java module object passing the serialized message.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_024: [This function shall call the void receive(byte[] source) method of the Java module object passing the serialized message.]*/
 		JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(moduleHandle->env), NULL);
 		jclass jModule_class = JNIFunc(moduleHandle->env, GetObjectClass, moduleHandle->module);
 		jmethodID jModule_receive = JNIFunc(moduleHandle->env, GetMethodID, jModule_class, "receive", "([B)V");
@@ -183,9 +183,9 @@ static void JavaModuleHost_Receive(MODULE_HANDLE module, MESSAGE_HANDLE message)
 
 JNIEXPORT jint JNICALL Java_com_microsoft_azure_gateway_core_MessageBus_publishMessage(JNIEnv* env, jobject jMessageBus, jlong bus, jbyteArray serialized_message)
 {
-	/*SRS_JAVA_MODULE_HOST_14_025: [This function shall use convert the jbyteArray message into an unsigned char array.]*/
-	/*SRS_JAVA_MODULE_HOST_14_026: [This function shall use the serialized message in a call to Message_Create.]*/
-	/*SRS_JAVA_MODULE_HOST_14_027: [This function shall publish the message to the MESSAGE_BUS_HANDLE addressed by addr and return the value of this function call.]*/
+	/*Codes_SRS_JAVA_MODULE_HOST_14_025: [This function shall use convert the jbyteArray message into an unsigned char array.]*/
+	/*Codes_SRS_JAVA_MODULE_HOST_14_026: [This function shall use the serialized message in a call to Message_Create.]*/
+	/*Codes_SRS_JAVA_MODULE_HOST_14_027: [This function shall publish the message to the MESSAGE_BUS_HANDLE addressed by addr and return the value of this function call.]*/
 	return 0;
 }
 
@@ -194,6 +194,7 @@ static int JVM_Create(JavaVM** jvm, JNIEnv* env, JVM_OPTIONS* options)
 {
 	/*Codes_SRS_JAVA_MODULE_HOST_14_009: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options.]*/
 	JavaVMInitArgs jvm_args;
+	VECTOR_HANDLE options_strings;
 	init_vm_options(&jvm_args, options);
 
 	/*Codes_SRS_JAVA_MODULE_HOST_14_012: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA.]*/
@@ -347,5 +348,6 @@ MODULE_EXPORT const MODULE_APIS* MODULE_STATIC_GETAPIS(JAVA_MODULE_HOST)(void)
 MODULE_EXPORT const MODULE_APIS* Module_GetAPIS(void)
 #endif
 {
+	/*Codes_SRS_JAVA_MODULE_HOST_14_028: [ This function shall return a non-NULL pointer to a structure of type MODULE_APIS that has all fields non-NULL. ]*/
 	return &JavaModuleHost_APIS;
 }

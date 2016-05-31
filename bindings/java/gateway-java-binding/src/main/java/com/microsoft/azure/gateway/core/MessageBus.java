@@ -10,7 +10,7 @@ public class MessageBus {
 
     //Loads the native library
     static {
-        System.loadLibrary("java_binding");
+        System.loadLibrary("java_module_host");
     }
 
     //Private Native Methods

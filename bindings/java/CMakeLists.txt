@@ -58,12 +58,12 @@ target_link_libraries(java_module_host_static gateway $ENV{JAVA_HOME}/lib/jvm.li
 
 #this builds the java_module_host_hl dynamic library (by default it uses java_module_host linked statically)
 add_library(java_module_host_hl MODULE ${java_module_host_hl_headers} ${java_module_host_hl_sources})
-target_link_libraries(java_module_host_hl gateway $ENV{JAVA_HOME}/lib/jvm.lib)
+target_link_libraries(java_module_host_hl java_module_host_static gateway $ENV{JAVA_HOME}/lib/jvm.lib)
 
 #this builds the java_module_host_hl static library (by default it uses the java_module_host linked statically)
 add_library(java_module_host_hl_static ${java_module_host_hl_static_headers} ${java_module_host_hl_static_sources})
 target_compile_definitions(java_module_host_hl_static PRIVATE BUILD_MODULE_TYPE_STATIC)
-target_link_libraries(java_module_host_hl_static gateway $ENV{JAVA_HOME}/lib/jvm.lib)
+target_link_libraries(java_module_host_hl_static java_module_host_static gateway $ENV{JAVA_HOME}/lib/jvm.lib)
 
 linkSharedUtil(java_module_host)
 linkSharedUtil(java_module_host_static)

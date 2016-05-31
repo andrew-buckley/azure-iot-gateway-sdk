@@ -4,7 +4,7 @@
 #ifndef JAVA_MODULE_HOST_HL_H
 #define JAVA_MODULE_HOST_HL_H
 
-#include "java_module_host.h"
+#include "module.h"
 
 #ifdef __cplusplus
 extern "C"

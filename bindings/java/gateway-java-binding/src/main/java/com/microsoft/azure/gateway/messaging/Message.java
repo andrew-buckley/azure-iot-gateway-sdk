@@ -58,5 +58,7 @@ public final class Message {
 
             }
         }
+
+        this.content = serializedMessage;
     }
 }
