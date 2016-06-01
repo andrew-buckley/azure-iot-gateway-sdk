@@ -19,6 +19,25 @@
         "class_path": "C:\\Users\\andbuc\\Desktop\\Tester\\target\\classes",
         "library_path": "..\\..\\bindings\\java\\Debug",
         "class_name": "Tester",
+        "args": "Speak",
+        "jvm_options": {
+          "version": 8,
+          "debug": false,
+          "debug_port": 8118,
+          "verbose": false,
+          "additional_options": [
+            "-Djava.version=1.8"
+          ]
+        }
+      }
+    },
+    {
+      "module name": "java_module_host",
+      "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
+      "args": {
+        "class_path": "C:\\Users\\andbuc\\Desktop\\Tester\\target\\classes",
+        "library_path": "..\\..\\bindings\\java\\Debug",
+        "class_name": "Tester",
         "args": {
           "frequency": 30
         },

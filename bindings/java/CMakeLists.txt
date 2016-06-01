@@ -45,7 +45,7 @@ include_directories(${GW_INC})
 if(WIN32)
     include_directories($ENV{JAVA_HOME}/include $ENV{JAVA_HOME}/include/win32)
     link_directories($ENV{JAVA_HOME}/lib)
-    link_directories($ENV{JAVA_HOME}/jre/bin/client)
+    link_directories($ENV{JAVA_HOME}/jre/bin/server)
 endif()
 
 #this builds the java_module_host dynamic library

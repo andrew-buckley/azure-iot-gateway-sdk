@@ -42,8 +42,6 @@ public final class Message {
     }
 
     public byte[] toByteArray() throws IOException {
-        byte[] result;
-
         ByteArrayOutputStream _bos = new ByteArrayOutputStream();
         DataOutputStream _dos = new DataOutputStream(_bos);
 
@@ -77,7 +75,7 @@ public final class Message {
         //Write ArraySize
         dos.writeInt(_result.length + 6);
         dos.write(_result);
-        result = bos.toByteArray();
+        byte[] result = bos.toByteArray();
 
         return result;
     }
