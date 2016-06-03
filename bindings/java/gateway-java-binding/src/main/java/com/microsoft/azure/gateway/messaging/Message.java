@@ -4,6 +4,8 @@
  */
 package com.microsoft.azure.gateway.messaging;
 
+import com.sun.javaws.exceptions.InvalidArgumentException;
+
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,33 +17,49 @@ public final class Message {
 
     private byte[] content;
 
+    /**
+     *
+     * @param content
+     * @param properties
+     */
     public Message(String content, Map<String, String> properties){
+        /*Codes_SRS_JAVA_MESSAGE_14_003: [ The constructor shall save the message content and properties map. ]*/
         this.content = content.getBytes();
         this.properties = properties;
     }
 
+    /**
+     *
+     * @param content
+     */
     public Message(String content){
+         /*Codes_SRS_JAVA_MESSAGE_14_003: [ The constructor shall save the message content and properties map. ]*/
         this.content = content.getBytes();
         this.properties = null;
     }
 
+    /**
+     *
+     * @param serializedMessage
+     */
     public Message(byte[] serializedMessage){
         try {
+            /*Codes_SRS_JAVA_MESSAGE_14_001: [ The constructor shall create a Message object by deserializing the byte array. ]*/
+            /*Codes_SRS_JAVA_MESSAGE_14_002: [ If the byte array is malformed, the function shall throw an IllegalArgumentException. ]*/
             fromByteArray(serializedMessage);
         } catch (IOException e) {
-            e.printStackTrace();
+            throw new IllegalArgumentException("Invalid byte array input.");
         }
     }
 
-    public Map<String, String> getProperties(){
-        return properties;
-    }
-
-    public byte[] getContent(){
-        return content;
-    }
-
+    /**
+     *
+     * @return
+     * @throws IOException
+     */
     public byte[] toByteArray() throws IOException {
+        /*Codes_SRS_JAVA_MESSAGE_14_004: [ The function shall serialize the Message content and properties according to the specification in message.h ]*/
+        /*Codes_SRS_JAVA_MESSAGE_14_005: [ The function shall return throw an IOException if the Message could not be serialized. ]*/
         ByteArrayOutputStream _bos = new ByteArrayOutputStream();
         DataOutputStream _dos = new DataOutputStream(_bos);
 
@@ -80,10 +98,24 @@ public final class Message {
         return result;
     }
 
+    public Map<String, String> getProperties(){
+        return properties;
+    }
+
+    public byte[] getContent(){
+        return content;
+    }
+
     public String toString(){
         return "Content: " + new String(this.content) + "\nProperties: " + this.properties.toString();
     }
 
+    /**
+     * Deserializes a byte array and sets the {@link Message#content} and {@link Message#properties}.
+     *
+     * @param serializedMessage The message to be deserialized.
+     * @throws IOException if the byte array in malformed.
+     */
     private void fromByteArray(byte[] serializedMessage) throws IOException {
         ByteArrayInputStream bis = new ByteArrayInputStream(serializedMessage);
         DataInputStream dis = new DataInputStream(bis);
@@ -93,14 +125,14 @@ public final class Message {
         byte header2 = dis.readByte();
         if(header1 == (byte)0xA1 && header2 == (byte)0x60){
             int arraySize = dis.readInt();
-            //if(arraySize < 14) {
+            if(arraySize >= 14) {
                 int propCount = dis.readInt();
 
                 if (propCount > 0) {
                     this.properties = new HashMap<String, String>();
                     for (int count = 0; count < propCount; count++) {
-                        byte[] key = readNullTerminatedByte(bis);
-                        byte[] value = readNullTerminatedByte(bis);
+                        byte[] key = readNullTerminatedString(bis);
+                        byte[] value = readNullTerminatedString(bis);
                         this.properties.put(new String(key), new String(value));
                     }
                 }
@@ -109,21 +141,24 @@ public final class Message {
                 byte[] content = new byte[contentLength];
                 dis.readFully(content);
                 this.content = content;
-            //}
-            //else{
-            //    throw new IllegalArgumentException("Invalid byte array size.");
-            //}
+            }
+            else{
+                throw new IOException("Invalid byte array size.");
+            }
+        } else {
+            throw new IOException("Invalid byte array header.");
         }
     }
 
     /**
      * Returns the first null-terminated ('\0') sub-array.
-     * @param bis
-     * @return
+     *
+     * @param bis The {@link ByteArrayInputStream} object from which to read the string.
+     * @return The null-terminated string in a byte array.
+     * @throws IOException if the null-terminated string could not be read.
      */
-    private byte[] readNullTerminatedByte(ByteArrayInputStream bis){
+    private byte[] readNullTerminatedString(ByteArrayInputStream bis) throws IOException {
         ArrayList<Byte> byteArray = new ArrayList<Byte>();
-
         byte b = (byte) bis.read();
 
         while(b != '\0' && b != -1){
@@ -131,9 +166,16 @@ public final class Message {
             b = (byte)bis.read();
         }
 
-        byte[] result = new byte[byteArray.size()];
-        for(int index = 0; index < result.length; index++){
-            result[index] = byteArray.get(index);
+        byte[] result;
+
+        if(b != -1) {
+
+            result = new byte[byteArray.size()];
+            for (int index = 0; index < result.length; index++) {
+                result[index] = byteArray.get(index);
+            }
+        } else {
+            throw new IOException("Could not read null-terminated string.");
         }
 
         return result;

@@ -34,6 +34,12 @@ public abstract class GatewayModule implements IGatewayModule{
      * @param configuration The module-specific configuration
      */
     public GatewayModule(long address, MessageBus bus, String configuration){
+        /*Codes_SRS_JAVA_GATEWAY_MODULE_14_002: [ If address or bus is null the constructor shall throw an IllegalArgumentException. ]*/
+        if(address == 0 || bus == null){
+            throw new IllegalArgumentException("Address is invalid or MessageBus is null.");
+        }
+
+        /*Codes_SRS_JAVA_GATEWAY_MODULE_14_001: [ The constructor shall save address, bus, and configuration into class variables. ]*/
         this.create(address, bus, configuration);
     }
 

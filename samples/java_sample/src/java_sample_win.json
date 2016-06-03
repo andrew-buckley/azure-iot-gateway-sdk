@@ -16,13 +16,17 @@
       "module name": "java_module_host",
       "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
       "args": {
-        "class_path": "C:\\Users\\andbuc\\Desktop\\Tester\\target\\classes",
+        "class_path": "C:\\Users\\andbuc\\Desktop\\Tester\\target\\test-module-1.0-SNAPSHOT-with-deps.jar",
         "library_path": "..\\..\\bindings\\java\\Debug",
         "class_name": "Tester",
-        "args": "Speak",
+        "args": {
+          "frequency": 1,
+          "publish": true,
+          "dictionary": ["java", "hello", "WOW!", "azure", "iot", "gateway", "sdk"]
+        },
         "jvm_options": {
           "version": 8,
-          "debug": false,
+          "debug": true,
           "debug_port": 8118,
           "verbose": false,
           "additional_options": [
@@ -35,15 +39,16 @@
       "module name": "java_module_host",
       "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
       "args": {
-        "class_path": "C:\\Users\\andbuc\\Desktop\\Tester\\target\\classes",
+        "class_path": "C:\\Users\\andbuc\\Desktop\\Tester\\target\\test-module-1.0-SNAPSHOT-with-deps.jar",
         "library_path": "..\\..\\bindings\\java\\Debug",
         "class_name": "Tester",
         "args": {
-          "frequency": 30
+          "frequency": 30,
+          "publish": false
         },
         "jvm_options": {
           "version": 8,
-          "debug": false,
+          "debug": true,
           "debug_port": 8118,
           "verbose": false,
           "additional_options": [

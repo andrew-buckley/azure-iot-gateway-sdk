@@ -142,26 +142,41 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 									}
 									else
 									{
-										jobject jModule_object = JNIFunc(result->env, NewObject, jModule_class, jModule_constructor, (jlong)result, jMessageBus_object);
+										jstring jModule_configuration = JNIFunc(result->env, NewStringUTF, config->configuration_json);
 										exception = JNIFunc(result->env, ExceptionOccurred);
-										if (jModule_object == NULL || exception)
+										if (jModule_configuration == NULL || exception)
 										{
 											/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
 											/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-											LogError("Failed to create the %s object.", result->moduleName);
+											LogError("Failed to create a new Java String.");
 											JNIFunc(result->env, ExceptionClear);
 											destroy_module_internal(result);
 											result = NULL;
 										}
 										else
 										{
-											/*Codes_SRS_JAVA_MODULE_HOST_14_020: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module.]*/
-											result->module = JNIFunc(result->env, NewGlobalRef, jModule_object);
-											if (result->module == NULL)
+											jobject jModule_object = JNIFunc(result->env, NewObject, jModule_class, jModule_constructor, (jlong)result, jMessageBus_object, jModule_configuration);
+											exception = JNIFunc(result->env, ExceptionOccurred);
+											if (jModule_object == NULL || exception)
 											{
-												LogError("Failed to get a global reference to the module Java object (%s). System ran out of memory.", result->moduleName);
+												/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+												/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+												LogError("Failed to create the %s object.", result->moduleName);
+												JNIFunc(result->env, ExceptionDescribe);
+												JNIFunc(result->env, ExceptionClear);
 												destroy_module_internal(result);
 												result = NULL;
+											}
+											else
+											{
+												/*Codes_SRS_JAVA_MODULE_HOST_14_020: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module.]*/
+												result->module = JNIFunc(result->env, NewGlobalRef, jModule_object);
+												if (result->module == NULL)
+												{
+													LogError("Failed to get a global reference to the module Java object (%s). System ran out of memory.", result->moduleName);
+													destroy_module_internal(result);
+													result = NULL;
+												}
 											}
 										}
 									}
@@ -208,6 +223,7 @@ static void JavaModuleHost_Destroy(MODULE_HANDLE module)
 					if (exception)
 					{
 						LogError("Exception occurred in destroy() of %s.", moduleHandle->moduleName);
+						JNIFunc(moduleHandle->env, ExceptionDescribe);
 						JNIFunc(moduleHandle->env, ExceptionClear);
 					}
 
@@ -287,6 +303,7 @@ static void JavaModuleHost_Receive(MODULE_HANDLE module, MESSAGE_HANDLE message)
 								if (exception)
 								{
 									LogError("Exception occurred in receive() of %s.", moduleHandle->moduleName);
+									JNIFunc(moduleHandle->env, ExceptionDescribe);
 									JNIFunc(moduleHandle->env, ExceptionClear);
 								}
 							}
