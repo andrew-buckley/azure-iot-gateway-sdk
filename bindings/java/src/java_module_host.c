@@ -10,13 +10,9 @@
 #include "java_module_host_common.h"
 #include "java_module_host.h"
 #include "azure_c_shared_utility\iot_logging.h"
-#include "azure_c_shared_utility\lock.h"
 //#include <vld.h>
 
 #define JNIFunc(jptr, call, ...) (*(jptr))->call(jptr, __VA_ARGS__)
-
-int JAVA_MODULE_COUNT = 0;
-LOCK_HANDLE l = NULL;
 
 typedef struct JAVA_MODULE_HANDLE_DATA_TAG
 {
@@ -24,6 +20,7 @@ typedef struct JAVA_MODULE_HANDLE_DATA_TAG
 	JNIEnv* env;
 	jobject module;
 	char* moduleName;
+	JAVA_MODULE_HOST_MANAGER_HANDLE manager;
 }JAVA_MODULE_HANDLE_DATA;
 
 static int JVM_Create(JavaVM**, JNIEnv**, JVM_OPTIONS*);
@@ -75,107 +72,127 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 				}
 				else
 				{
-					/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall find the MessageBus Java class, get the constructor, and create a MessageBus Java object.]*/
-					jclass jMessageBus_class = JNIFunc(result->env, FindClass, MESSAGE_BUS_CLASS_NAME);
-					jthrowable exception = JNIFunc(result->env, ExceptionOccurred);
-					if (jMessageBus_class == NULL || exception)
+					result->manager = JavaModuleHostManager_Create();
+					if (result->manager == NULL)
 					{
-						/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-						/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-						LogError("Could not find class (%s).", MESSAGE_BUS_CLASS_NAME);
-						JNIFunc(result->env, ExceptionClear);
+						LogError("Failed to create a JAVA_MODULE_HOST_MANAGER_HANDLE.");
 						destroy_module_internal(result);
 						result = NULL;
 					}
 					else
 					{
-						jmethodID jMessageBus_constructor = JNIFunc(result->env, GetMethodID, jMessageBus_class, CONSTRUCTOR_METHOD_NAME, MESSAGE_BUS_CONSTRUCTOR_DESCRIPTOR);
-						exception = JNIFunc(result->env, ExceptionOccurred);
-						if (jMessageBus_constructor == NULL || exception)
+						/*Codes_SRS_JAVA_MODULE_HOST_14_014: [This function shall increment the JAVA_MODULE_COUNT global variable.]*/
+						if (JavaModuleHostManager_Add(result->manager) == MANAGER_ERROR)
 						{
-							/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-							/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-							LogError("Failed to find the %s constructor.", MESSAGE_BUS_CLASS_NAME);
-							JNIFunc(result->env, ExceptionClear);
+							LogError("JavaModuleHostManager_Add failed.");
 							destroy_module_internal(result);
 							result = NULL;
 						}
 						else
 						{
-							jobject jMessageBus_object = JNIFunc(result->env, NewObject, jMessageBus_class, jMessageBus_constructor, (jlong)bus);
-							exception = JNIFunc(result->env, ExceptionOccurred);
-							if (jMessageBus_object == NULL || exception)
+							/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall find the MessageBus Java class, get the constructor, and create a MessageBus Java object.]*/
+							jclass jMessageBus_class = JNIFunc(result->env, FindClass, MESSAGE_BUS_CLASS_NAME);
+							jthrowable exception = JNIFunc(result->env, ExceptionOccurred);
+							if (jMessageBus_class == NULL || exception)
 							{
 								/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
 								/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-								LogError("Failed to create the %s object.", MESSAGE_BUS_CLASS_NAME);
+								LogError("Could not find class (%s).", MESSAGE_BUS_CLASS_NAME);
 								JNIFunc(result->env, ExceptionClear);
 								destroy_module_internal(result);
 								result = NULL;
 							}
 							else
 							{
-								/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall find the user-defined Java module class using configuration->class_name, get the constructor, and create an instance of this module object.]*/
-								jclass jModule_class = JNIFunc(result->env, FindClass, result->moduleName);
+								jmethodID jMessageBus_constructor = JNIFunc(result->env, GetMethodID, jMessageBus_class, CONSTRUCTOR_METHOD_NAME, MESSAGE_BUS_CONSTRUCTOR_DESCRIPTOR);
 								exception = JNIFunc(result->env, ExceptionOccurred);
-								if (jModule_class == NULL || exception)
+								if (jMessageBus_constructor == NULL || exception)
 								{
 									/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
 									/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-									LogError("Could not find class (%s).", result->moduleName);
+									LogError("Failed to find the %s constructor.", MESSAGE_BUS_CLASS_NAME);
 									JNIFunc(result->env, ExceptionClear);
 									destroy_module_internal(result);
 									result = NULL;
 								}
 								else
 								{
-									jmethodID jModule_constructor = JNIFunc(result->env, GetMethodID, jModule_class, CONSTRUCTOR_METHOD_NAME, MODULE_CONSTRUCTOR_DESCRIPTOR);
+									jobject jMessageBus_object = JNIFunc(result->env, NewObject, jMessageBus_class, jMessageBus_constructor, (jlong)bus);
 									exception = JNIFunc(result->env, ExceptionOccurred);
-									if (jModule_constructor == NULL || exception)
+									if (jMessageBus_object == NULL || exception)
 									{
 										/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
 										/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-										LogError("Failed to find the %s constructor.", result->moduleName);
+										LogError("Failed to create the %s object.", MESSAGE_BUS_CLASS_NAME);
 										JNIFunc(result->env, ExceptionClear);
 										destroy_module_internal(result);
 										result = NULL;
 									}
 									else
 									{
-										jstring jModule_configuration = JNIFunc(result->env, NewStringUTF, config->configuration_json);
+										/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall find the user-defined Java module class using configuration->class_name, get the constructor, and create an instance of this module object.]*/
+										jclass jModule_class = JNIFunc(result->env, FindClass, result->moduleName);
 										exception = JNIFunc(result->env, ExceptionOccurred);
-										if (jModule_configuration == NULL || exception)
+										if (jModule_class == NULL || exception)
 										{
 											/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
 											/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-											LogError("Failed to create a new Java String.");
+											LogError("Could not find class (%s).", result->moduleName);
 											JNIFunc(result->env, ExceptionClear);
 											destroy_module_internal(result);
 											result = NULL;
 										}
 										else
 										{
-											jobject jModule_object = JNIFunc(result->env, NewObject, jModule_class, jModule_constructor, (jlong)result, jMessageBus_object, jModule_configuration);
+											jmethodID jModule_constructor = JNIFunc(result->env, GetMethodID, jModule_class, CONSTRUCTOR_METHOD_NAME, MODULE_CONSTRUCTOR_DESCRIPTOR);
 											exception = JNIFunc(result->env, ExceptionOccurred);
-											if (jModule_object == NULL || exception)
+											if (jModule_constructor == NULL || exception)
 											{
 												/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
 												/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-												LogError("Failed to create the %s object.", result->moduleName);
-												JNIFunc(result->env, ExceptionDescribe);
+												LogError("Failed to find the %s constructor.", result->moduleName);
 												JNIFunc(result->env, ExceptionClear);
 												destroy_module_internal(result);
 												result = NULL;
 											}
 											else
 											{
-												/*Codes_SRS_JAVA_MODULE_HOST_14_020: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module.]*/
-												result->module = JNIFunc(result->env, NewGlobalRef, jModule_object);
-												if (result->module == NULL)
+												jstring jModule_configuration = JNIFunc(result->env, NewStringUTF, config->configuration_json);
+												exception = JNIFunc(result->env, ExceptionOccurred);
+												if (jModule_configuration == NULL || exception)
 												{
-													LogError("Failed to get a global reference to the module Java object (%s). System ran out of memory.", result->moduleName);
+													/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+													/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+													LogError("Failed to create a new Java String.");
+													JNIFunc(result->env, ExceptionClear);
 													destroy_module_internal(result);
 													result = NULL;
+												}
+												else
+												{
+													jobject jModule_object = JNIFunc(result->env, NewObject, jModule_class, jModule_constructor, (jlong)result, jMessageBus_object, jModule_configuration);
+													exception = JNIFunc(result->env, ExceptionOccurred);
+													if (jModule_object == NULL || exception)
+													{
+														/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+														/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+														LogError("Failed to create the %s object.", result->moduleName);
+														JNIFunc(result->env, ExceptionDescribe);
+														JNIFunc(result->env, ExceptionClear);
+														destroy_module_internal(result);
+														result = NULL;
+													}
+													else
+													{
+														/*Codes_SRS_JAVA_MODULE_HOST_14_020: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module.]*/
+														result->module = JNIFunc(result->env, NewGlobalRef, jModule_object);
+														if (result->module == NULL)
+														{
+															LogError("Failed to get a global reference to the module Java object (%s). System ran out of memory.", result->moduleName);
+															destroy_module_internal(result);
+															result = NULL;
+														}
+													}
 												}
 											}
 										}
@@ -219,7 +236,7 @@ static void JavaModuleHost_Destroy(MODULE_HANDLE module)
 				else
 				{
 					JNIFunc(moduleHandle->env, CallVoidMethod, moduleHandle->module, jModule_destroy);
-					jthrowable exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
+					exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
 					if (exception)
 					{
 						LogError("Exception occurred in destroy() of %s.", moduleHandle->moduleName);
@@ -249,79 +266,72 @@ static void JavaModuleHost_Destroy(MODULE_HANDLE module)
 
 static void JavaModuleHost_Receive(MODULE_HANDLE module, MESSAGE_HANDLE message)
 {
-	if (Lock(l) == LOCK_OK)
+	/*Codes_SRS_JAVA_MODULE_HOST_14_022: [This function shall do nothing if module or message is NULL.]*/
+	if (module != NULL && message != NULL)
 	{
-		/*Codes_SRS_JAVA_MODULE_HOST_14_022: [This function shall do nothing if module or message is NULL.]*/
-		if (module != NULL && message != NULL)
+		JAVA_MODULE_HANDLE_DATA* moduleHandle = (JAVA_MODULE_HANDLE_DATA*)module;
+
+		/*Codes_SRS_JAVA_MODULE_HOST_14_023: [This function shall serialize message.]*/
+		int32_t size;
+		unsigned char* serialized_message = (unsigned char*)Message_ToByteArray(message, &size);
+
+		/*Codes_SRS_JAVA_MODULE_HOST_14_024: [This function shall call the void receive(byte[] source) method of the Java module object passing the serialized message.]*/
+		jint jni_result = JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(&(moduleHandle->env)), NULL);
+
+		if (jni_result == JNI_OK)
 		{
-			JAVA_MODULE_HANDLE_DATA* moduleHandle = (JAVA_MODULE_HANDLE_DATA*)module;
-
-			/*Codes_SRS_JAVA_MODULE_HOST_14_023: [This function shall serialize message.]*/
-			int32_t size;
-			unsigned char* serialized_message = (unsigned char*)Message_ToByteArray(message, &size);
-
-			/*Codes_SRS_JAVA_MODULE_HOST_14_024: [This function shall call the void receive(byte[] source) method of the Java module object passing the serialized message.]*/
-			jint jni_result = JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(&(moduleHandle->env)), NULL);
-
-			if (jni_result == JNI_OK)
+			//TODO: error check
+			jbyteArray arr = JNIFunc(moduleHandle->env, NewByteArray, size);
+			if (arr == NULL)
 			{
-				//TODO: error check
-				jbyteArray arr = JNIFunc(moduleHandle->env, NewByteArray, size);
-				if (arr == NULL)
+				LogError("New jbyteArray could not be constructed.");
+			}
+			else
+			{
+				JNIFunc(moduleHandle->env, SetByteArrayRegion, arr, 0, size, serialized_message);
+				jthrowable exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
+				if (exception)
 				{
-					LogError("New jbyteArray could not be constructed.");
+					LogError("Exception occurred in SetByteArrayRegion.");
+					JNIFunc(moduleHandle->env, ExceptionClear);
 				}
 				else
 				{
-					JNIFunc(moduleHandle->env, SetByteArrayRegion, arr, 0, size, serialized_message);
-					jthrowable exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
-					if (exception)
+					jclass jModule_class = JNIFunc(moduleHandle->env, GetObjectClass, moduleHandle->module);
+					if (jModule_class == NULL)
 					{
-						LogError("Exception occurred in SetByteArrayRegion.");
-						JNIFunc(moduleHandle->env, ExceptionClear);
+						LogError("Could not find class (%s) for the module Java object. destroy() will not be called on this object.", moduleHandle->moduleName);
 					}
 					else
 					{
-						jclass jModule_class = JNIFunc(moduleHandle->env, GetObjectClass, moduleHandle->module);
-						if (jModule_class == NULL)
+						jmethodID jModule_receive = JNIFunc(moduleHandle->env, GetMethodID, jModule_class, MODULE_RECEIVE_METHOD_NAME, MODULE_RECEIVE_DESCRIPTOR);
+						exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
+						if (jModule_receive == NULL || exception)
 						{
-							LogError("Could not find class (%s) for the module Java object. destroy() will not be called on this object.", moduleHandle->moduleName);
+							LogError("Failed to find the %s destroy() method. destroy() will not be called on this object.", moduleHandle->moduleName);
+							JNIFunc(moduleHandle->env, ExceptionClear);
 						}
 						else
 						{
-							jmethodID jModule_receive = JNIFunc(moduleHandle->env, GetMethodID, jModule_class, MODULE_RECEIVE_METHOD_NAME, MODULE_RECEIVE_DESCRIPTOR);
+							JNIFunc(moduleHandle->env, CallVoidMethod, moduleHandle->module, jModule_receive, arr);
 							exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
-							if (jModule_receive == NULL || exception)
+							if (exception)
 							{
-								LogError("Failed to find the %s destroy() method. destroy() will not be called on this object.", moduleHandle->moduleName);
+								LogError("Exception occurred in receive() of %s.", moduleHandle->moduleName);
+								JNIFunc(moduleHandle->env, ExceptionDescribe);
 								JNIFunc(moduleHandle->env, ExceptionClear);
 							}
-							else
-							{
-								JNIFunc(moduleHandle->env, CallVoidMethod, moduleHandle->module, jModule_receive, arr);
-								exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
-								if (exception)
-								{
-									LogError("Exception occurred in receive() of %s.", moduleHandle->moduleName);
-									JNIFunc(moduleHandle->env, ExceptionDescribe);
-									JNIFunc(moduleHandle->env, ExceptionClear);
-								}
-							}
 						}
-						JNIFunc(moduleHandle->env, DeleteLocalRef, arr);
 					}
+					JNIFunc(moduleHandle->env, DeleteLocalRef, arr);
 				}
-				JNIFunc(moduleHandle->jvm, DetachCurrentThread);
 			}
-
-			free(serialized_message);
+			JNIFunc(moduleHandle->jvm, DetachCurrentThread);
 		}
-		Unlock(l);
+
+		free(serialized_message);
 	}
-	else
-	{
-		LogError("Could not acquire lock.");
-	}
+
 }
 
 JNIEXPORT jint JNICALL Java_com_microsoft_azure_gateway_core_MessageBus_publishMessage(JNIEnv* env, jobject jMessageBus, jlong module_address, jlong bus_address, jbyteArray serialized_message)
@@ -386,12 +396,6 @@ static int JVM_Create(JavaVM** jvm, JNIEnv** env, JVM_OPTIONS* options)
 		/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall return NULL if a JVM could not be created or found.]*/
 		/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
 		LogError("Failed to launch JVM. JNI_CreateJavaVM returned: %d.", result);
-	}
-	else
-	{
-		/*Codes_SRS_JAVA_MODULE_HOST_14_014: [This function shall increment the JAVA_MODULE_COUNT global variable.]*/
-		l = Lock_Init();
-		JAVA_MODULE_COUNT++;
 	}
 
 	//Free up any memory used when initializing the JavaVMInitArgs
@@ -520,13 +524,18 @@ static void deinit_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE options_st
 
 static void destroy_module_internal(JAVA_MODULE_HANDLE_DATA* module)
 {
-	JAVA_MODULE_COUNT--;
-	LogInfo("JAVA_MODULE_COUND: %i.", JAVA_MODULE_COUNT);
-	if (JAVA_MODULE_COUNT == 0)
+	if (JavaModuleHostManager_Remove(module->manager) == MANAGER_ERROR)
+	{
+		LogError("JavaModuleHostManager_Remove failed.");
+	}
+
+	LogInfo("Module Count: %i.", JavaModuleHostManager_Size(module->manager));
+	if (JavaModuleHostManager_Size(module->manager) == 0)
 	{
 		LogInfo("Destroying JVM");
 		JVM_Destroy(&(module->jvm), module->env);
 	}
+	JavaModuleHostManager_Destroy(module->manager);
 	free(module);
 }
 

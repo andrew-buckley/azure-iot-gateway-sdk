@@ -4,14 +4,24 @@
 cmake_minimum_required(VERSION 2.8.11)
 #this is CMakeLists for java binding
 
+set(java_module_host_manager_sources
+    ./src/java_module_host_manager.c
+)
+
+set(java_module_host_manager_headers
+    ./inc/java_module_host_manager.h
+)
+
 set(java_module_host_sources
 	./src/java_module_host.c
+    ${java_module_host_manager_sources}
 )
 
 set(java_module_host_headers
     ./inc/message_bus_proxy.h
     ./inc/java_module_host_common.h
     ./inc/java_module_host.h
+    ${java_module_host_manager_headers}
 )
 
 set(java_module_host_static_sources

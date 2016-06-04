@@ -22,11 +22,11 @@
         "args": {
           "frequency": 1,
           "publish": true,
-          "dictionary": ["java", "hello", "WOW!", "azure", "iot", "gateway", "sdk"]
+          "dictionary": [ "java", "hello", "WOW!", "azure", "iot", "gateway", "sdk" ]
         },
         "jvm_options": {
           "version": 8,
-          "debug": true,
+          "debug": false,
           "debug_port": 8118,
           "verbose": false,
           "additional_options": [
@@ -35,6 +35,7 @@
         }
       }
     },
+
     {
       "module name": "java_module_host",
       "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
@@ -48,7 +49,7 @@
         },
         "jvm_options": {
           "version": 8,
-          "debug": true,
+          "debug": false,
           "debug_port": 8118,
           "verbose": false,
           "additional_options": [

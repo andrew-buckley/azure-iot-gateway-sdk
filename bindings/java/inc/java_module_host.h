@@ -7,14 +7,13 @@
 #include <stdbool.h>
 #include <cstdbool>
 #include "azure_c_shared_utility\vector.h"
+#include "java_module_host_manager.h"
 #include "module.h"
 
 #ifdef __cplusplus
 extern "C"
 {
 #endif
-
-extern int JAVA_MODULE_COUNT;
 
 typedef struct JVM_OPTIONS_TAG
 {
@@ -33,6 +32,8 @@ typedef struct JAVA_MODULE_HOST_CONFIG_TAG
 	const char* configuration_json;
 	JVM_OPTIONS* options;
 } JAVA_MODULE_HOST_CONFIG;
+
+//extern JAVA_MODULE_HOST_MANAGER_HANDLE* module_manager;
 
 MODULE_EXPORT const MODULE_APIS* MODULE_STATIC_GETAPIS(JAVA_MODULE_HOST)(void);
 

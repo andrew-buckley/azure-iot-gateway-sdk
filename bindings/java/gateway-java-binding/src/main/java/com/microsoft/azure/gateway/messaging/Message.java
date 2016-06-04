@@ -4,8 +4,6 @@
  */
 package com.microsoft.azure.gateway.messaging;
 
-import com.sun.javaws.exceptions.InvalidArgumentException;
-
 import java.io.*;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -19,28 +17,28 @@ public final class Message {
 
     /**
      *
-     * @param content
-     * @param properties
+     * @param content The message content as a string.
+     * @param properties The string to string map of peroperties for this message.
      */
     public Message(String content, Map<String, String> properties){
         /*Codes_SRS_JAVA_MESSAGE_14_003: [ The constructor shall save the message content and properties map. ]*/
-        this.content = content.getBytes();
-        this.properties = properties;
+        this.content = content != null ? content.getBytes() : new byte[0];
+        this.properties = properties != null ? properties : new HashMap<String, String>();
     }
 
     /**
      *
-     * @param content
+     * @param content The message content as a string.
      */
     public Message(String content){
          /*Codes_SRS_JAVA_MESSAGE_14_003: [ The constructor shall save the message content and properties map. ]*/
-        this.content = content.getBytes();
-        this.properties = null;
+        this.content = content != null ? content.getBytes() : new byte[0];
+        this.properties = new HashMap<String, String>();
     }
 
     /**
      *
-     * @param serializedMessage
+     * @param serializedMessage The fully serialized message.
      */
     public Message(byte[] serializedMessage){
         try {
@@ -117,36 +115,42 @@ public final class Message {
      * @throws IOException if the byte array in malformed.
      */
     private void fromByteArray(byte[] serializedMessage) throws IOException {
-        ByteArrayInputStream bis = new ByteArrayInputStream(serializedMessage);
-        DataInputStream dis = new DataInputStream(bis);
+        try {
+            ByteArrayInputStream bis = new ByteArrayInputStream(serializedMessage);
+            DataInputStream dis = new DataInputStream(bis);
 
-        //Get Header
-        byte header1 = dis.readByte();
-        byte header2 = dis.readByte();
-        if(header1 == (byte)0xA1 && header2 == (byte)0x60){
-            int arraySize = dis.readInt();
-            if(arraySize >= 14) {
-                int propCount = dis.readInt();
+            //Get Header
+            byte header1 = dis.readByte();
+            byte header2 = dis.readByte();
+            if (header1 == (byte) 0xA1 && header2 == (byte) 0x60) {
+                int arraySize = dis.readInt();
+                if (arraySize >= 14) {
+                    Map<String, String> _properties = new HashMap<String, String>();
+                    int propCount = dis.readInt();
 
-                if (propCount > 0) {
-                    this.properties = new HashMap<String, String>();
-                    for (int count = 0; count < propCount; count++) {
-                        byte[] key = readNullTerminatedString(bis);
-                        byte[] value = readNullTerminatedString(bis);
-                        this.properties.put(new String(key), new String(value));
+                    if (propCount > 0) {
+                        for (int count = 0; count < propCount; count++) {
+                            byte[] key = readNullTerminatedString(bis);
+                            byte[] value = readNullTerminatedString(bis);
+                            _properties.put(new String(key), new String(value));
+                        }
                     }
-                }
 
-                int contentLength = dis.readInt();
-                byte[] content = new byte[contentLength];
-                dis.readFully(content);
-                this.content = content;
+                    int contentLength = dis.readInt();
+                    byte[] content = new byte[contentLength];
+                    dis.readFully(content);
+
+                    //At this point it should be safe to set both properties and content
+                    this.properties = _properties;
+                    this.content = content;
+                } else {
+                    throw new IOException("Invalid byte array size.");
+                }
+            } else {
+                throw new IOException("Invalid byte array header.");
             }
-            else{
-                throw new IOException("Invalid byte array size.");
-            }
-        } else {
-            throw new IOException("Invalid byte array header.");
+        } catch(Exception e){
+            throw new IOException("Unexpected exception occurred: " + e.getMessage());
         }
     }
 
