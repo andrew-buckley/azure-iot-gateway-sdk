@@ -82,6 +82,9 @@ linkSharedUtil(java_module_host_hl)
 linkSharedUtil(java_module_host_hl_static)
 
 add_module_to_solution(java_module_host)
+
+add_subdirectory(tests)
+
 if(install_executables)
     install(TARGETS java_module_host LIBRARY DESTINATION lib)
     install(TARGETS java_module_host_hl LIBRARY DESTINATION lib)

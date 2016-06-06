@@ -414,99 +414,208 @@ static void JVM_Destroy(JavaVM** jvm, JNIEnv* env)
 
 static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_strings, JVM_OPTIONS* jvm_options)
 {
+	int result = 0;
 	if (jvm_options == NULL)
 	{
 		/*Codes_SRS_JAVA_MODULE_HOST_14_010: [If configuration->options is NULL, JavaVMInitArgs shall be initialized using default values.]*/
 		//TODO: use version from jvm options and have this function return a value
 		jvm_args->version = JNI_VERSION_1_8;
-		int result = JNI_GetDefaultJavaVMInitArgs(jvm_args);
+		result = JNI_GetDefaultJavaVMInitArgs(jvm_args);
 	}
 	else
 	{
 		*options_strings = VECTOR_create(sizeof(STRING_HANDLE));
 
-		/*Codes_SRS_JAVA_MODULE_HOST_14_011: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided.]*/
-		int options_count = 0;
-
-		options_count += (jvm_options->class_path != NULL ? 1 : 0);
-		options_count += (jvm_options->library_path != NULL ? 1 : 0);
-		options_count += (jvm_options->debug == true ? 3 : 0);
-		options_count += (jvm_options->verbose == true ? 1 : 0);
-		options_count += VECTOR_size(jvm_options->additional_options);
-
-		switch (jvm_options->version)
+		if (*options_strings == NULL)
 		{
-		case 1:
-			(*jvm_args).version = JNI_VERSION_1_1;
-			break;
-		case 2:
-			(*jvm_args).version = JNI_VERSION_1_2;
-			break;
-		case 4:
-			(*jvm_args).version = JNI_VERSION_1_4;
-			break;
-		case 6:
-			(*jvm_args).version = JNI_VERSION_1_6;
-			break;
-		case 8:
-			(*jvm_args).version = JNI_VERSION_1_8;
-			break;
-		default:
-			(*jvm_args).version = JNI_VERSION_1_8;
+			LogError("Failed to create VECTOR_HANDLE for options strings.");
+			result = __LINE__;
 		}
-
-		//Create JavaVMOption structure and set elements.
-		JavaVMOption* options = (JavaVMOption*)malloc(sizeof(JavaVMOption)*options_count);
-		(*jvm_args).nOptions = options_count;
-		(*jvm_args).options = options;
-		(*jvm_args).ignoreUnrecognized = 0;
-
-		//Set all options
-		if (jvm_options->class_path != NULL)
+		else
 		{
-			char* cp = (char*)malloc(strlen("-Djava.class.path") + 1 + strlen(DEFAULT_CLASS_PATH) + 1 + strlen(jvm_options->class_path) + 1);
-			sprintf(cp, "%s=%s;%s", "-Djava.class.path", DEFAULT_CLASS_PATH, jvm_options->class_path);
-			STRING_HANDLE class_path = STRING_construct(cp);
-			VECTOR_push_back(*options_strings, &class_path, 1);
-			options[--options_count].optionString = (char*)STRING_c_str(class_path);
-			free(cp);
-		}
-		if (jvm_options->library_path != NULL)
-		{
-			char* lp = (char*)malloc(strlen("-Djava.library.path") + 1 + strlen(jvm_options->library_path) + 1);
-			sprintf(lp, "%s=%s", "-Djava.library.path", jvm_options->library_path);
-			STRING_HANDLE library_path = STRING_construct(lp);
-			VECTOR_push_back(*options_strings, &library_path, 1);
-			options[--options_count].optionString = (char*)STRING_c_str(library_path);
-			free(lp);
-		}
-		if (jvm_options->debug == 1) {
-			char *debug_str = (char*)malloc(strlen("-Xrunjdwp:transport=dt_socket,address=0000,server=y,suspend=y") + 2);
-			sprintf(debug_str, "-Xrunjdwp:transport=dt_socket,address=%i,server=y,suspend=y", jvm_options->debug_port != 0 ? jvm_options->debug_port : DEBUG_PORT_DEFAULT);
-			STRING_HANDLE debug_1 = STRING_construct("-Xrs");
-			STRING_HANDLE debug_2 = STRING_construct("-Xdebug");
-			STRING_HANDLE debug_3 = STRING_construct(debug_str);
-			VECTOR_push_back(*options_strings, &debug_1, 1);
-			VECTOR_push_back(*options_strings, &debug_2, 1);
-			VECTOR_push_back(*options_strings, &debug_3, 1);
-			options[--options_count].optionString = (char*)STRING_c_str(debug_1);
-			options[--options_count].optionString = (char*)STRING_c_str(debug_2);
-			options[--options_count].optionString = (char*)STRING_c_str(debug_3);
-			free(debug_str);
-		}
-		if (jvm_options->verbose == 1) {
-			STRING_HANDLE verbose_str = STRING_construct("-verbose:class");
-			VECTOR_push_back(*options_strings, &verbose_str, 1);
-			options[--options_count].optionString = (char*)STRING_c_str(verbose_str);
-		}
-		if (jvm_options->additional_options != NULL) {
-			for (size_t opt_index = 0; opt_index < VECTOR_size(jvm_options->additional_options); ++opt_index) {
-				STRING_HANDLE str = STRING_construct(STRING_c_str(*((STRING_HANDLE*)VECTOR_element(jvm_options->additional_options, opt_index))));
-				VECTOR_push_back(*options_strings, &str, 1);
-				options[--options_count].optionString = (char*)STRING_c_str(str);
+
+			/*Codes_SRS_JAVA_MODULE_HOST_14_011: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided.]*/
+			int options_count = 0;
+
+			options_count += (jvm_options->class_path != NULL ? 1 : 0);
+			options_count += (jvm_options->library_path != NULL ? 1 : 0);
+			options_count += (jvm_options->debug == true ? 3 : 0);
+			options_count += (jvm_options->verbose == true ? 1 : 0);
+			options_count += VECTOR_size(jvm_options->additional_options);
+
+			switch (jvm_options->version)
+			{
+			case 1:
+				(*jvm_args).version = JNI_VERSION_1_1;
+				break;
+			case 2:
+				(*jvm_args).version = JNI_VERSION_1_2;
+				break;
+			case 4:
+				(*jvm_args).version = JNI_VERSION_1_4;
+				break;
+			case 6:
+				(*jvm_args).version = JNI_VERSION_1_6;
+				break;
+			case 8:
+				(*jvm_args).version = JNI_VERSION_1_8;
+				break;
+			default:
+				(*jvm_args).version = JNI_VERSION_1_8;
+			}
+
+			//Create JavaVMOption structure and set elements.
+			JavaVMOption* options = (JavaVMOption*)malloc(sizeof(JavaVMOption)*options_count);
+			if (options == NULL)
+			{
+				LogError("Failed to allocate memory for JavaVMOption.");
+				result = __LINE__;
+			}
+			else
+			{
+				(*jvm_args).nOptions = options_count;
+				(*jvm_args).options = options;
+				(*jvm_args).ignoreUnrecognized = 0;
+
+				//Set all options
+				if (jvm_options->class_path != NULL && result == 0)
+				{
+					char* cp = (char*)malloc(strlen("-Djava.class.path") + 1 + strlen(DEFAULT_CLASS_PATH) + 1 + strlen(jvm_options->class_path) + 1);
+					if (cp == NULL)
+					{
+						LogError("Failed to allocate memory for class path string.");
+						result = __LINE__;
+					}
+					else
+					{
+						if(sprintf(cp, "%s=%s;%s", "-Djava.class.path", DEFAULT_CLASS_PATH, jvm_options->class_path) < 0)
+						{
+							LogError("sprintf failed.");
+							result = __LINE__;
+						}
+						else
+						{
+							STRING_HANDLE class_path = STRING_construct(cp);
+							if (class_path == NULL)
+							{
+								LogError("String_construct failed.");
+								result = __LINE__;
+							}
+							else
+							{
+								if (VECTOR_push_back(*options_strings, &class_path, 1) != 0)
+								{
+									LogError("Failed to push class path onto vector.");
+									result = __LINE__;
+								}
+								else
+								{
+									options[--options_count].optionString = (char*)STRING_c_str(class_path);
+								}
+							}
+						}
+						free(cp);
+					}
+				}
+				if (jvm_options->library_path != NULL && result == 0)
+				{
+					char* lp = (char*)malloc(strlen("-Djava.library.path") + 1 + strlen(jvm_options->library_path) + 1);
+					if (lp == NULL)
+					{
+						LogError("Failed to allocate memory for library path string.");
+						result = __LINE__;
+					}
+					else
+					{
+						if (sprintf(lp, "%s=%s", "-Djava.library.path", jvm_options->library_path) < 0)
+						{
+							LogError("sprintf failed.");
+							result = __LINE__;
+						}
+						else
+						{
+							STRING_HANDLE library_path = STRING_construct(lp);
+							if (library_path == NULL)
+							{
+								LogError("String_construct failed.");
+								result = __LINE__;
+							}
+							else
+							{
+								if (VECTOR_push_back(*options_strings, &library_path, 1) != 0)
+								{
+									LogError("Failed to push library path onto vector.");
+									result = __LINE__;
+								}
+								else
+								{
+									options[--options_count].optionString = (char*)STRING_c_str(library_path);
+								}
+							}
+						}
+						free(lp);
+					}
+				}
+				if (jvm_options->debug == 1 && result == 0) {
+					char *debug_str = (char*)malloc(strlen("-Xrunjdwp:transport=dt_socket,address=0000,server=y,suspend=y") + 2);
+					if (debug_str == NULL)
+					{
+						LogError("Failed to allocate memoryfor the debug string.");
+						result = __LINE__;
+					}
+					else
+					{
+						if (sprintf(debug_str, "-Xrunjdwp:transport=dt_socket,address=%i,server=y,suspend=y", jvm_options->debug_port != 0 ? jvm_options->debug_port : DEBUG_PORT_DEFAULT) < 0)
+						{
+							LogError("sprintf failed.");
+							result = __LINE__;
+						}
+						else
+						{
+							STRING_HANDLE debug_1 = STRING_construct("-Xrs");
+							STRING_HANDLE debug_2 = STRING_construct("-Xdebug");
+							STRING_HANDLE debug_3 = STRING_construct(debug_str);
+							if (debug_1 == NULL || debug_2 == NULL || debug_3 == NULL)
+							{
+								LogError("String_construct failed.");
+								result = __LINE__;
+							}
+							else
+							{
+								if (VECTOR_push_back(*options_strings, &debug_1, 1) != 0 || 
+									VECTOR_push_back(*options_strings, &debug_2, 1) != 0 || 
+									VECTOR_push_back(*options_strings, &debug_3, 1) != 0)
+								{
+									LogError("Failed to push debug options onto vector.");
+									result = __LINE__;
+								}
+								else
+								{
+									options[--options_count].optionString = (char*)STRING_c_str(debug_1);
+									options[--options_count].optionString = (char*)STRING_c_str(debug_2);
+									options[--options_count].optionString = (char*)STRING_c_str(debug_3);
+								}
+							}
+						}
+						free(debug_str);
+					}
+				}
+				if (jvm_options->verbose == 1 && result == 0) {
+					STRING_HANDLE verbose_str = STRING_construct("-verbose:class");
+					VECTOR_push_back(*options_strings, &verbose_str, 1);
+					options[--options_count].optionString = (char*)STRING_c_str(verbose_str);
+				}
+				if (jvm_options->additional_options != NULL && result == 0) {
+					for (size_t opt_index = 0; opt_index < VECTOR_size(jvm_options->additional_options); ++opt_index) {
+						STRING_HANDLE str = STRING_construct(STRING_c_str(*((STRING_HANDLE*)VECTOR_element(jvm_options->additional_options, opt_index))));
+						VECTOR_push_back(*options_strings, &str, 1);
+						options[--options_count].optionString = (char*)STRING_c_str(str);
+					}
+				}
 			}
 		}
 	}
+	return result;
 }
 
 static void deinit_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE options_strings)

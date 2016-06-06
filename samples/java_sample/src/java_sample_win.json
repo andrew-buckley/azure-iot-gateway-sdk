@@ -35,7 +35,6 @@
         }
       }
     },
-
     {
       "module name": "java_module_host",
       "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
