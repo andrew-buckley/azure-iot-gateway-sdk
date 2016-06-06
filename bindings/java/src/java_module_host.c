@@ -10,6 +10,7 @@
 #include "java_module_host_common.h"
 #include "java_module_host.h"
 #include "azure_c_shared_utility\iot_logging.h"
+#include "azure_c_shared_utility\gballoc.h"
 //#include <vld.h>
 
 #define JNIFunc(jptr, call, ...) (*(jptr))->call(jptr, __VA_ARGS__)
@@ -26,7 +27,7 @@ typedef struct JAVA_MODULE_HANDLE_DATA_TAG
 static int JVM_Create(JavaVM**, JNIEnv**, JVM_OPTIONS*);
 static void JVM_Destroy(JavaVM**, JNIEnv*);
 static void destroy_module_internal(JAVA_MODULE_HANDLE_DATA*);
-static void init_vm_options(JavaVMInitArgs*, VECTOR_HANDLE*, JVM_OPTIONS*);
+static int init_vm_options(JavaVMInitArgs*, VECTOR_HANDLE*, JVM_OPTIONS*);
 static void deinit_vm_options(JavaVMInitArgs*, VECTOR_HANDLE);
 
 static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* configuration)
@@ -45,27 +46,25 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 
 		if (config->class_name == NULL)
 		{
-			/*Codes_SRS_JAVA_MODULE_HOST_14_005: [This function shall return NULL if class_name is NULL.]*/
+			/*Codes_SRS_JAVA_MODULE_HOST_14_003: [This function shall return NULL if class_name is NULL.]*/
 			LogError("Invalid input. configuration->class_name cannot be NULL.");
 			result = NULL;
 		}
 		else
 		{
-			/*Codes_SRS_JAVA_MODULE_HOST_14_008: [This function shall allocate memory for an instance of a JAVA_MODULE_HANDLE_DATA structure to be used as the backing structure for this module.]*/
+			/*Codes_SRS_JAVA_MODULE_HOST_14_006: [This function shall allocate memory for an instance of a JAVA_MODULE_HANDLE_DATA structure to be used as the backing structure for this module.]*/
 			result = (JAVA_MODULE_HANDLE_DATA*)malloc(sizeof(JAVA_MODULE_HANDLE_DATA));
 			if (result == NULL)
 			{
-				/*Codes_SRS_JAVA_MODULE_HOST_14_006: [This function shall return NULL upon any underlying API call failure.]*/
+				/*Codes_SRS_JAVA_MODULE_HOST_14_004: [This function shall return NULL upon any underlying API call failure.]*/
 				LogError("Malloc failure.");
 			}
 			else
 			{
 				result->moduleName = (char*)config->class_name;
-				/*Codes_SRS_JAVA_MODULE_HOST_14_006: [This function shall return NULL upon any underlying API call failure.]*/
-				/*Codes_SRS_JAVA_MODULE_HOST_14_007: [This function shall return a non-NULL MODULE_HANDLE when successful.]*/
 				if (JVM_Create(&(result->jvm), &(result->env), config->options) != JNI_OK)
 				{
-					/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall return NULL if a JVM could not be created or found.]*/
+					/*Codes_SRS_JAVA_MODULE_HOST_14_013: [This function shall return NULL if a JVM could not be created or found.]*/
 					LogError("Failed to successfully create JVM.");
 					destroy_module_internal(result);
 					result = NULL;
@@ -81,7 +80,7 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 					}
 					else
 					{
-						/*Codes_SRS_JAVA_MODULE_HOST_14_014: [This function shall increment the JAVA_MODULE_COUNT global variable.]*/
+						/*Codes_SRS_JAVA_MODULE_HOST_14_012: [This function shall increment the JAVA_MODULE_COUNT global variable.]*/
 						if (JavaModuleHostManager_Add(result->manager) == MANAGER_ERROR)
 						{
 							LogError("JavaModuleHostManager_Add failed.");
@@ -95,8 +94,8 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 							jthrowable exception = JNIFunc(result->env, ExceptionOccurred);
 							if (jMessageBus_class == NULL || exception)
 							{
-								/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-								/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+								/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+								/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 								LogError("Could not find class (%s).", MESSAGE_BUS_CLASS_NAME);
 								JNIFunc(result->env, ExceptionClear);
 								destroy_module_internal(result);
@@ -108,8 +107,8 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 								exception = JNIFunc(result->env, ExceptionOccurred);
 								if (jMessageBus_constructor == NULL || exception)
 								{
-									/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-									/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+									/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+									/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 									LogError("Failed to find the %s constructor.", MESSAGE_BUS_CLASS_NAME);
 									JNIFunc(result->env, ExceptionClear);
 									destroy_module_internal(result);
@@ -121,8 +120,8 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 									exception = JNIFunc(result->env, ExceptionOccurred);
 									if (jMessageBus_object == NULL || exception)
 									{
-										/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-										/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+										/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+										/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 										LogError("Failed to create the %s object.", MESSAGE_BUS_CLASS_NAME);
 										JNIFunc(result->env, ExceptionClear);
 										destroy_module_internal(result);
@@ -130,13 +129,13 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 									}
 									else
 									{
-										/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall find the user-defined Java module class using configuration->class_name, get the constructor, and create an instance of this module object.]*/
+										/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall find the user-defined Java module class using configuration->class_name, get the constructor, and create an instance of this module object.]*/
 										jclass jModule_class = JNIFunc(result->env, FindClass, result->moduleName);
 										exception = JNIFunc(result->env, ExceptionOccurred);
 										if (jModule_class == NULL || exception)
 										{
-											/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-											/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+											/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+											/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 											LogError("Could not find class (%s).", result->moduleName);
 											JNIFunc(result->env, ExceptionClear);
 											destroy_module_internal(result);
@@ -148,8 +147,8 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 											exception = JNIFunc(result->env, ExceptionOccurred);
 											if (jModule_constructor == NULL || exception)
 											{
-												/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-												/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+												/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+												/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 												LogError("Failed to find the %s constructor.", result->moduleName);
 												JNIFunc(result->env, ExceptionClear);
 												destroy_module_internal(result);
@@ -161,8 +160,8 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 												exception = JNIFunc(result->env, ExceptionOccurred);
 												if (jModule_configuration == NULL || exception)
 												{
-													/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-													/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+													/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+													/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 													LogError("Failed to create a new Java String.");
 													JNIFunc(result->env, ExceptionClear);
 													destroy_module_internal(result);
@@ -174,8 +173,8 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 													exception = JNIFunc(result->env, ExceptionOccurred);
 													if (jModule_object == NULL || exception)
 													{
-														/*Codes_SRS_JAVA_MODULE_HOST_14_018: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
-														/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+														/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+														/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 														LogError("Failed to create the %s object.", result->moduleName);
 														JNIFunc(result->env, ExceptionDescribe);
 														JNIFunc(result->env, ExceptionClear);
@@ -184,7 +183,7 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 													}
 													else
 													{
-														/*Codes_SRS_JAVA_MODULE_HOST_14_020: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module.]*/
+														/*Codes_SRS_JAVA_MODULE_HOST_14_018: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module.]*/
 														result->module = JNIFunc(result->env, NewGlobalRef, jModule_object);
 														if (result->module == NULL)
 														{
@@ -205,6 +204,7 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 			}
 		}
 	}
+	/*Codes_SRS_JAVA_MODULE_HOST_14_005: [This function shall return a non-NULL MODULE_HANDLE when successful.]*/
 	return result;
 }
 
@@ -375,32 +375,34 @@ static int JVM_Create(JavaVM** jvm, JNIEnv** env, JVM_OPTIONS* options)
 	/*Codes_SRS_JAVA_MODULE_HOST_14_009: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options.]*/
 	JavaVMInitArgs jvm_args;
 	VECTOR_HANDLE options_strings;
-	init_vm_options(&jvm_args, &options_strings, options);
+	int result = init_vm_options(&jvm_args, &options_strings, options);
 
-	/*Codes_SRS_JAVA_MODULE_HOST_14_012: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA.]*/
-	int result = JNI_CreateJavaVM(jvm, (void**)env, &jvm_args);
-
-	/*Codes_SRS_JAVA_MODULE_HOST_14_013: [If the JVM was previously created, the function shall get a pointer to that JavaVM pointer and JNIEnv environment pointer.]*/
-	if (result == JNI_EEXIST)
+	if (result == JNI_OK)
 	{
-		jsize vmCount;
-		result = JNI_GetCreatedJavaVMs(jvm, 1, &vmCount);
-		if (result == JNI_OK)
+		/*Codes_SRS_JAVA_MODULE_HOST_14_012: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA.]*/
+		result = JNI_CreateJavaVM(jvm, (void**)env, &jvm_args);
+
+		/*Codes_SRS_JAVA_MODULE_HOST_14_013: [If the JVM was previously created, the function shall get a pointer to that JavaVM pointer and JNIEnv environment pointer.]*/
+		if (result == JNI_EEXIST)
 		{
-			JNIFunc(*jvm, GetEnv, (void**)env, jvm_args.version);
+			jsize vmCount;
+			result = JNI_GetCreatedJavaVMs(jvm, 1, &vmCount);
+			if (result == JNI_OK)
+			{
+				JNIFunc(*jvm, GetEnv, (void**)env, jvm_args.version);
+			}
 		}
+
+		if (result < 0 || !(*env))
+		{
+			/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall return NULL if a JVM could not be created or found.]*/
+			/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+			LogError("Failed to launch JVM. JNI_CreateJavaVM returned: %d.", result);
+		}
+
+		//Free up any memory used when initializing the JavaVMInitArgs
+		deinit_vm_options(&jvm_args, options_strings);
 	}
-
-	if (result < 0 || !(*env))
-	{
-		/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall return NULL if a JVM could not be created or found.]*/
-		/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
-		LogError("Failed to launch JVM. JNI_CreateJavaVM returned: %d.", result);
-	}
-
-	//Free up any memory used when initializing the JavaVMInitArgs
-	deinit_vm_options(&jvm_args, options_strings);
-
 	return result;
 }
 
@@ -412,7 +414,7 @@ static void JVM_Destroy(JavaVM** jvm, JNIEnv* env)
 	JNIFunc(*jvm, DestroyJavaVM);
 }
 
-static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_strings, JVM_OPTIONS* jvm_options)
+static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_strings, JVM_OPTIONS* jvm_options)
 {
 	int result = 0;
 	if (jvm_options == NULL)
@@ -466,7 +468,7 @@ static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_str
 
 			//Create JavaVMOption structure and set elements.
 			JavaVMOption* options = (JavaVMOption*)malloc(sizeof(JavaVMOption)*options_count);
-			if (options == NULL)
+			if (options == NULL && options_count != 0)
 			{
 				LogError("Failed to allocate memory for JavaVMOption.");
 				result = __LINE__;
@@ -506,6 +508,7 @@ static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_str
 								if (VECTOR_push_back(*options_strings, &class_path, 1) != 0)
 								{
 									LogError("Failed to push class path onto vector.");
+									STRING_delete(class_path);
 									result = __LINE__;
 								}
 								else
@@ -545,6 +548,7 @@ static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_str
 								if (VECTOR_push_back(*options_strings, &library_path, 1) != 0)
 								{
 									LogError("Failed to push library path onto vector.");
+									STRING_delete(library_path);
 									result = __LINE__;
 								}
 								else
@@ -587,6 +591,9 @@ static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_str
 									VECTOR_push_back(*options_strings, &debug_3, 1) != 0)
 								{
 									LogError("Failed to push debug options onto vector.");
+									STRING_delete(debug_1);
+									STRING_delete(debug_2);
+									STRING_delete(debug_3);
 									result = __LINE__;
 								}
 								else
@@ -602,14 +609,55 @@ static void init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_str
 				}
 				if (jvm_options->verbose == 1 && result == 0) {
 					STRING_HANDLE verbose_str = STRING_construct("-verbose:class");
-					VECTOR_push_back(*options_strings, &verbose_str, 1);
-					options[--options_count].optionString = (char*)STRING_c_str(verbose_str);
+					if (verbose_str == NULL)
+					{
+						LogError("String_construct failed.");
+						result = __LINE__;
+					}
+					else
+					{
+						if (VECTOR_push_back(*options_strings, &verbose_str, 1) != 0)
+						{
+							LogError("Failed to push debug options onto vector.");
+							STRING_delete(verbose_str);
+							result = __LINE__;
+						}
+						else
+						{
+							options[--options_count].optionString = (char*)STRING_c_str(verbose_str);
+						}
+					}
 				}
 				if (jvm_options->additional_options != NULL && result == 0) {
-					for (size_t opt_index = 0; opt_index < VECTOR_size(jvm_options->additional_options); ++opt_index) {
-						STRING_HANDLE str = STRING_construct(STRING_c_str(*((STRING_HANDLE*)VECTOR_element(jvm_options->additional_options, opt_index))));
-						VECTOR_push_back(*options_strings, &str, 1);
-						options[--options_count].optionString = (char*)STRING_c_str(str);
+					for (size_t opt_index = 0; opt_index < VECTOR_size(jvm_options->additional_options) && result == 0; ++opt_index) {
+						STRING_HANDLE* s = (STRING_HANDLE*)VECTOR_element(jvm_options->additional_options, opt_index);
+						if (s == NULL)
+						{
+							LogError("Vector_element failed.");
+							result = __LINE__;
+						}
+						else
+						{
+							STRING_HANDLE str = STRING_clone(*s);
+							if (str == NULL)
+							{
+								LogError("STRING_clone failed.");
+								result = __LINE__;
+							}
+							else
+							{
+								if (VECTOR_push_back(*options_strings, &str, 1) != 0)
+								{
+									LogError("Failed to push additional option (%s) onto vector.", STRING_c_str(str));
+									result = __LINE__;
+								}
+								else
+								{
+									options[--options_count].optionString = (char*)STRING_c_str(str);
+								}
+							}
+						}
+						
 					}
 				}
 			}
