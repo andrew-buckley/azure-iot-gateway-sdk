@@ -107,17 +107,16 @@ static void parse_jvm_options_internal(JAVA_MODULE_HOST_CONFIG* config, JSON_Obj
 	config->options->verbose = json_object_get_boolean(jvm_options, "verbose") == 1 ? true : false;
 
 	JSON_Array* arr = json_object_get_array(jvm_options, "additional_options");
-	size_t addition_options_count = json_array_get_count(arr);
-	if(addition_options_count != 0)
-	{
-		//TODO: Check if vector created properly
-		config->options->additional_options = VECTOR_create(sizeof(STRING_HANDLE));
-		for (size_t index = 0; index < addition_options_count; index++) {
-			//TODO: Check each string
-			STRING_HANDLE str = STRING_construct(json_array_get_string(arr, index));
-			VECTOR_push_back(config->options->additional_options, &str, 1);
-		}
+	size_t additional_options_count = json_array_get_count(arr);
+
+	//TODO: Check if vector created properly
+	config->options->additional_options = additional_options_count == 0 ? NULL : VECTOR_create(sizeof(STRING_HANDLE));
+	for (size_t index = 0; index < additional_options_count; index++) {
+		//TODO: Check each string
+		STRING_HANDLE str = STRING_construct(json_array_get_string(arr, index));
+		VECTOR_push_back(config->options->additional_options, &str, 1);
 	}
+
 }
 
 static const MODULE_APIS JavaModuleHost_HL_APIS =

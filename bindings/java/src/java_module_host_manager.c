@@ -17,6 +17,8 @@ typedef struct JAVA_MODULE_HOST_MANAGER_DATA_TAG {
 	LOCK_HANDLE lock;
 } JAVA_MODULE_HOST_MANAGER_HANDLE_DATA;
 
+static JAVA_MODULE_HOST_MANAGER_RESULT internal_inc_dec(JAVA_MODULE_HOST_MANAGER_HANDLE, int);
+
 JAVA_MODULE_HOST_MANAGER_HANDLE JavaModuleHostManager_Create()
 {
 	JAVA_MODULE_HOST_MANAGER_HANDLE_DATA* result;
@@ -60,7 +62,7 @@ JAVA_MODULE_HOST_MANAGER_HANDLE JavaModuleHostManager_Create()
 
 void JavaModuleHostManager_Destroy(JAVA_MODULE_HOST_MANAGER_HANDLE manager)
 {
-	if (manager == NULL)
+	if (manager == NULL || manager != instance)
 	{
 		/*Codes_SRS_JAVA_MODULE_HOST_MANAGER_14_009: [ The function shall do nothing if handle is NULL. ]*/
 		LogError("JAVA_MODULE_HOST_MANAGER_HANDLE is NULL.");

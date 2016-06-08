@@ -18,222 +18,61 @@
 #include "azure_c_shared_utility\strings.h"
 #include "java_module_host.h"
 
-#ifdef __cplusplus
-#include <cstdint>
-#include <cstddef>
-extern "C" {
-#else
 #include <stdint.h>
 #include <stddef.h>
-#endif
-//#include <jni.h>
 
-	#ifndef _JAVASOFT_JNI_H_
-	#define _JAVASOFT_JNI_H_
+#define _JAVASOFT_JNI_MD_H_
+#define JNIEXPORT
+#define JNIIMPORT
+#define JNICALL
 
-	#define JNIEXPORT __declspec(dllexport)
-	#define JNIIMPORT __declspec(dllimport)
-	#define JNICALL __stdcall
+typedef long jint;
+typedef __int64 jlong;
+typedef signed char jbyte;
 
-	typedef long jint;
-	typedef __int64 jlong;
-	typedef signed char jbyte;
+#include <jni.h>
 
-	typedef unsigned char   jboolean;
-	typedef unsigned short  jchar;
-	typedef short           jshort;
-	typedef float           jfloat;
-	typedef double          jdouble;
+//gballoc mocks
+MOCKABLE_FUNCTION(, void*, gballoc_malloc, size_t, size);
+MOCKABLE_FUNCTION(, void, gballoc_free, void*, ptr);
 
-	typedef jint            jsize;
+//Message mocks
+MOCKABLE_FUNCTION(, MESSAGE_HANDLE, Message_CreateFromByteArray, const unsigned char*, source, int32_t, size);
+MOCKABLE_FUNCTION(, const unsigned char*, Message_ToByteArray, MESSAGE_HANDLE, messageHandle, int32_t*, size);
+MOCKABLE_FUNCTION(, void, Message_Destroy, MESSAGE_HANDLE, message);
 
-	struct _jobject;
+//MessageBus mocks
+MOCKABLE_FUNCTION(, MESSAGE_BUS_RESULT, MessageBus_Publish, MESSAGE_BUS_HANDLE, bus, MESSAGE_HANDLE, message);
 
-	typedef struct _jobject *jobject;
-	typedef jobject jclass;
-	typedef jobject jthrowable;
-	typedef jobject jstring;
-	typedef jobject jarray;
-	typedef jarray jbooleanArray;
-	typedef jarray jbyteArray;
-	typedef jarray jcharArray;
-	typedef jarray jshortArray;
-	typedef jarray jintArray;
-	typedef jarray jlongArray;
-	typedef jarray jfloatArray;
-	typedef jarray jdoubleArray;
-	typedef jarray jobjectArray;
+//JNI mocks
+MOCKABLE_FUNCTION(JNICALL, jint, JNI_GetDefaultJavaVMInitArgs, void*, args);
+MOCKABLE_FUNCTION(JNICALL, jint, JNI_CreateJavaVM, JavaVM**, pvm, void **, penv, void*, args);
+MOCKABLE_FUNCTION(JNICALL, jint, JNI_GetCreatedJavaVMs, JavaVM **, pvm, jsize, count, jsize*, size);
 
-	typedef jobject jweak;
+//JEnv function mocks
+MOCK_FUNCTION_WITH_CODE(JNICALL, jclass, my_FindClass, JNIEnv*, env, const char*, name);
+return (jclass)0x42;
+MOCK_FUNCTION_END()
 
-	typedef union jvalue {
-		jboolean z;
-		jbyte    b;
-		jchar    c;
-		jshort   s;
-		jint     i;
-		jlong    j;
-		jfloat   f;
-		jdouble  d;
-		jobject  l;
-	} jvalue;
+MOCK_FUNCTION_WITH_CODE(JNICALL, jmethodID, my_GetMethodID, JNIEnv*, env, jclass, clazz, const char*, name, const char*, sig);
+return (jmethodID)0x42;
+MOCK_FUNCTION_END()
 
-	struct _jfieldID;
-	typedef struct _jfieldID *jfieldID;
+MOCK_FUNCTION_WITH_CODE(JNICALL, jobject, my_NewObject, JNIEnv*, env, jclass, clazz, jmethodID, methodID);
+return (jobject)0x42;
+MOCK_FUNCTION_END()
 
-	struct _jmethodID;
-	typedef struct _jmethodID *jmethodID;
+MOCK_FUNCTION_WITH_CODE(JNICALL, jthrowable, my_ExceptionOccurred);
+return NULL;
+MOCK_FUNCTION_END()
 
-	/* Return values from jobjectRefType */
-	typedef enum _jobjectType {
-		JNIInvalidRefType = 0,
-		JNILocalRefType = 1,
-		JNIGlobalRefType = 2,
-		JNIWeakGlobalRefType = 3
-	} jobjectRefType;
+MOCK_FUNCTION_WITH_CODE(JNICALL, void, my_ExceptionClear);
+MOCK_FUNCTION_END()
 
-	/*
-	* jboolean constants
-	*/
-
-	#define JNI_FALSE 0
-	#define JNI_TRUE 1
-
-	/*
-	* possible return values for JNI functions.
-	*/
-
-	#define JNI_OK           0                 /* success */
-	#define JNI_ERR          (-1)              /* unknown error */
-	#define JNI_EDETACHED    (-2)              /* thread detached from the VM */
-	#define JNI_EVERSION     (-3)              /* JNI version error */
-	#define JNI_ENOMEM       (-4)              /* not enough memory */
-	#define JNI_EEXIST       (-5)              /* VM already created */
-	#define JNI_EINVAL       (-6)              /* invalid arguments */
-
-	/*
-	* used in ReleaseScalarArrayElements
-	*/
-
-	#define JNI_COMMIT 1
-	#define JNI_ABORT 2
-
-	/*
-	* used in RegisterNatives to describe native method name, signature,
-	* and function pointer.
-	*/
-
-	typedef struct {
-		char *name;
-		char *signature;
-		void *fnPtr;
-	} JNINativeMethod;
-
-	/*
-	* JNI Native Method Interface.
-	*/
-
-	struct JNINativeInterface_;
-
-	struct JNIEnv_;
-
-	/*
-	* JNI Native Method Interface.
-	*/
-
-	struct JNINativeInterface_;
-
-	struct JNIEnv_;
-
-	#ifdef __cplusplus
-		typedef JNIEnv_ JNIEnv;
-	#else
-		typedef const struct JNINativeInterface_ *JNIEnv;
-	#endif
-
-		/*
-		* JNI Invocation Interface.
-		*/
-
-		struct JNIInvokeInterface_;
-
-		struct JavaVM_;
-
-	#ifdef __cplusplus
-		typedef JavaVM_ JavaVM;
-	#else
-		typedef const struct JNIInvokeInterface_ *JavaVM;
-	#endif
-
-	typedef struct JavaVMOption {
-		char *optionString;
-		void *extraInfo;
-	} JavaVMOption;
-
-	typedef struct JavaVMInitArgs {
-		jint version;
-
-		jint nOptions;
-		JavaVMOption *options;
-		jboolean ignoreUnrecognized;
-	} JavaVMInitArgs;
-
-	typedef struct JavaVMAttachArgs {
-		jint version;
-
-		char *name;
-		jobject group;
-	} JavaVMAttachArgs;
-
-	/* These will be VM-specific. */
-
-	#define JDK1_2
-	#define JDK1_4
-
-	/* End VM-specific. */
-
-	struct JNIInvokeInterface_ {
-		void *reserved0;
-		void *reserved1;
-		void *reserved2;
-
-		jint(JNICALL *DestroyJavaVM)(JavaVM *vm);
-
-		jint(JNICALL *AttachCurrentThread)(JavaVM *vm, void **penv, void *args);
-
-		jint(JNICALL *DetachCurrentThread)(JavaVM *vm);
-
-		jint(JNICALL *GetEnv)(JavaVM *vm, void **penv, jint version);
-
-		jint(JNICALL *AttachCurrentThreadAsDaemon)(JavaVM *vm, void **penv, void *args);
-	};
-
-	struct JavaVM_ {
-		const struct JNIInvokeInterface_ *functions;
-	};
-
-	#endif
-
-	//gballoc mocks
-	MOCKABLE_FUNCTION(, void*, gballoc_malloc, size_t, size);
-	MOCKABLE_FUNCTION(, void, gballoc_free, void*, ptr);
-
-	//Message mocks
-	MOCKABLE_FUNCTION(, MESSAGE_HANDLE, Message_CreateFromByteArray, const unsigned char*, source, int32_t, size);
-	MOCKABLE_FUNCTION(, const unsigned char*, Message_ToByteArray, MESSAGE_HANDLE, messageHandle, int32_t*, size);
-	MOCKABLE_FUNCTION(, void, Message_Destroy, MESSAGE_HANDLE, message);
-
-	//MessageBus mocks
-	MOCKABLE_FUNCTION(, MESSAGE_BUS_RESULT, MessageBus_Publish, MESSAGE_BUS_HANDLE, bus, MESSAGE_HANDLE, message);
-
-	//JNI mocks
-	MOCKABLE_FUNCTION(JNICALL, jint, JNI_GetDefaultJavaVMInitArgs, void*, args);
-	MOCKABLE_FUNCTION(JNICALL, jint, JNI_CreateJavaVM, JavaVM**, pvm, void **, peng, void*, args);
-	MOCKABLE_FUNCTION(JNICALL, jint, JNI_GetCreatedJavaVMs, JavaVM **, pvm, jsize, count, jsize*, size);
-
-#ifdef __cplusplus
-}
-#endif
+//JVM function mocks
+MOCK_FUNCTION_WITH_CODE(JNICALL, jint, my_AttachCurrentThread, JavaVM*, vm, void**, penv, void*, args);
+return JNI_OK;
+MOCK_FUNCTION_END()
 
 #undef ENABLE_MOCKS
 
@@ -244,29 +83,122 @@ static TEST_MUTEX_HANDLE g_dllByDll;
 
 static bool malloc_will_fail = false;
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+static bool module_manager_count = 0;
+static JAVA_MODULE_HOST_MANAGER_HANDLE global_manager = NULL;
 
-	void* my_gballoc_malloc(size_t size)
+
+void* my_gballoc_malloc(size_t size)
+{
+	void* result = NULL;
+	if (malloc_will_fail == false)
 	{
-		void* result = NULL;
-		if (malloc_will_fail == false)
-		{
-			result = malloc(size);
-		}
-
-		return result;
+		result = malloc(size);
 	}
 
-	void my_gballoc_free(void* ptr)
-	{
-		free(ptr);
-	}
-
-#ifdef __cplusplus
+	return result;
 }
-#endif
+
+void my_gballoc_free(void* ptr)
+{
+	free(ptr);
+}
+
+JAVA_MODULE_HOST_MANAGER_HANDLE my_JavaModuleHostManager_Create()
+{
+	if (module_manager_count == 0)
+	{
+		global_manager = malloc(0x42);
+	}
+	module_manager_count++;
+	return global_manager;
+}
+
+void my_JavaModuleHostManager_Destroy(JAVA_MODULE_HOST_MANAGER_HANDLE manager)
+{
+	if (manager != NULL && manager == global_manager)
+	{
+		if (module_manager_count == 0)
+		{
+				free(manager);
+				manager = NULL;
+				global_manager = NULL;
+		}
+	}
+}
+
+JAVA_MODULE_HOST_MANAGER_RESULT my_JavaModuleHostManager_Add(JAVA_MODULE_HOST_MANAGER_HANDLE manager)
+{
+	module_manager_count++;
+	return MANAGER_OK;
+}
+
+JAVA_MODULE_HOST_MANAGER_RESULT my_JavaModuleHostManager_Remove(JAVA_MODULE_HOST_MANAGER_HANDLE manager)
+{
+	module_manager_count--;
+	return MANAGER_OK;
+}
+
+size_t my_JavaModuleHostManager_Size(JAVA_MODULE_HOST_MANAGER_HANDLE manager)
+{
+	return module_manager_count;
+}
+
+jint mock_JNI_CreateJavaVM(JavaVM** pvm, void** penv, void* args)
+{
+	//233
+	struct JNINativeInterface_ env = {
+		0, 0, 0, 0, 
+		
+		0, 0, my_FindClass, 0, 0, 0, 0, 0, 0, 0,
+		0, my_ExceptionOccurred, 0, my_ExceptionClear, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, my_NewObject, 0, 0, 0, 0, my_GetMethodID,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, 0, 0, 0, 0, 0, 0
+	};
+
+	struct JNIInvokeInterface_ vm = {
+		0,
+		0,
+		0,
+
+		0,
+		my_AttachCurrentThread,
+		0,
+		0,
+		0
+	};
+
+	*pvm = (JavaVM*)malloc(sizeof(JavaVM));
+	*(*pvm) = (struct JNIInvokeInterface_ *)malloc(sizeof(struct JNIInvokeInterface_));
+	*(struct JNIInvokeInterface_ *)**pvm = vm;
+	//memcpy((*(*pvm)), &vm, sizeof(vm));
+
+
+	*penv = (JNIEnv*)malloc(sizeof(JNIEnv));
+	*((JNIEnv*)(*penv)) = malloc(sizeof(struct JNINativeInterface_));
+	*(struct JNINativeInterface_*)(*((JNIEnv*)(*penv))) = env;
+	//memcpy((*((JNIEnv*)(*penv))), &env, sizeof(env));
+
+	return 0;
+}
 
 void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 {
@@ -301,6 +233,23 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
 
 	REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, my_gballoc_malloc);
 	REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, my_gballoc_free);
+
+	REGISTER_GLOBAL_MOCK_HOOK(JavaModuleHostManager_Create, my_JavaModuleHostManager_Create);
+
+	REGISTER_GLOBAL_MOCK_HOOK(JavaModuleHostManager_Destroy, my_JavaModuleHostManager_Destroy);
+
+	REGISTER_GLOBAL_MOCK_HOOK(JavaModuleHostManager_Add, my_JavaModuleHostManager_Add);
+
+	REGISTER_GLOBAL_MOCK_HOOK(JavaModuleHostManager_Remove, my_JavaModuleHostManager_Remove);
+
+	REGISTER_GLOBAL_MOCK_HOOK(JavaModuleHostManager_Size, my_JavaModuleHostManager_Size);
+
+	REGISTER_GLOBAL_MOCK_HOOK(JNI_CreateJavaVM, mock_JNI_CreateJavaVM);
+
+	REGISTER_UMOCK_ALIAS_TYPE(JAVA_MODULE_HOST_MANAGER_HANDLE, void*);
+
+	REGISTER_UMOCK_ALIAS_TYPE(JavaVM, void*);
+	REGISTER_UMOCK_ALIAS_TYPE(jint, long);
 }
 
 TEST_SUITE_CLEANUP(TestClassCleanup)

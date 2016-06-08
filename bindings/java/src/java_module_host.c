@@ -6,6 +6,21 @@
 #include <crtdbg.h>
 #endif
 
+#ifdef UNDER_TEST /*write here a comment*/
+
+#define _JAVASOFT_JNI_MD_H_
+#define JNIEXPORT
+#define JNIIMPORT
+#define JNICALL
+
+typedef long jint;
+typedef __int64 jlong;
+typedef signed char jbyte;
+
+#include <jni.h>
+
+#endif
+
 #include "message_bus_proxy.h"
 #include "java_module_host_common.h"
 #include "java_module_host.h"
@@ -89,7 +104,7 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 						}
 						else
 						{
-							/*Codes_SRS_JAVA_MODULE_HOST_14_016: [This function shall find the MessageBus Java class, get the constructor, and create a MessageBus Java object.]*/
+							/*Codes_SRS_JAVA_MODULE_HOST_14_014: [This function shall find the MessageBus Java class, get the constructor, and create a MessageBus Java object.]*/
 							jclass jMessageBus_class = JNIFunc(result->env, FindClass, MESSAGE_BUS_CLASS_NAME);
 							jthrowable exception = JNIFunc(result->env, ExceptionOccurred);
 							if (jMessageBus_class == NULL || exception)
@@ -372,17 +387,17 @@ JNIEXPORT jint JNICALL Java_com_microsoft_azure_gateway_core_MessageBus_publishM
 //Internal functions
 static int JVM_Create(JavaVM** jvm, JNIEnv** env, JVM_OPTIONS* options)
 {
-	/*Codes_SRS_JAVA_MODULE_HOST_14_009: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options.]*/
+	/*Codes_SRS_JAVA_MODULE_HOST_14_007: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options.]*/
 	JavaVMInitArgs jvm_args;
-	VECTOR_HANDLE options_strings;
+	VECTOR_HANDLE options_strings = NULL;
 	int result = init_vm_options(&jvm_args, &options_strings, options);
 
 	if (result == JNI_OK)
 	{
-		/*Codes_SRS_JAVA_MODULE_HOST_14_012: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_010: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA.]*/
 		result = JNI_CreateJavaVM(jvm, (void**)env, &jvm_args);
 
-		/*Codes_SRS_JAVA_MODULE_HOST_14_013: [If the JVM was previously created, the function shall get a pointer to that JavaVM pointer and JNIEnv environment pointer.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_011: [If the JVM was previously created, the function shall get a pointer to that JavaVM pointer and JNIEnv environment pointer.]*/
 		if (result == JNI_EEXIST)
 		{
 			jsize vmCount;
@@ -395,8 +410,8 @@ static int JVM_Create(JavaVM** jvm, JNIEnv** env, JVM_OPTIONS* options)
 
 		if (result < 0 || !(*env))
 		{
-			/*Codes_SRS_JAVA_MODULE_HOST_14_015: [This function shall return NULL if a JVM could not be created or found.]*/
-			/*Codes_SRS_JAVA_MODULE_HOST_14_019: [This function shall return NULL if any JNI function fails.]*/
+			/*Codes_SRS_JAVA_MODULE_HOST_14_013: [This function shall return NULL if a JVM could not be created or found.]*/
+			/*Codes_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
 			LogError("Failed to launch JVM. JNI_CreateJavaVM returned: %d.", result);
 		}
 
@@ -419,13 +434,15 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 	int result = 0;
 	if (jvm_options == NULL)
 	{
-		/*Codes_SRS_JAVA_MODULE_HOST_14_010: [If configuration->options is NULL, JavaVMInitArgs shall be initialized using default values.]*/
+		/*Codes_SRS_JAVA_MODULE_HOST_14_008: [If configuration->options is NULL, JavaVMInitArgs shall be initialized using default values.]*/
 		//TODO: use version from jvm options and have this function return a value
 		jvm_args->version = JNI_VERSION_1_8;
+		jvm_args->options = NULL;
 		result = JNI_GetDefaultJavaVMInitArgs(jvm_args);
 	}
 	else
 	{
+		/*Codes_SRS_JAVA_MODULE_HOST_14_031:[The function shall create a new VECTOR_HANDLE to store the option strings.]*/
 		*options_strings = VECTOR_create(sizeof(STRING_HANDLE));
 
 		if (*options_strings == NULL)
@@ -435,8 +452,6 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 		}
 		else
 		{
-
-			/*Codes_SRS_JAVA_MODULE_HOST_14_011: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided.]*/
 			int options_count = 0;
 
 			options_count += (jvm_options->class_path != NULL ? 1 : 0);
@@ -445,29 +460,9 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 			options_count += (jvm_options->verbose == true ? 1 : 0);
 			options_count += VECTOR_size(jvm_options->additional_options);
 
-			switch (jvm_options->version)
-			{
-			case 1:
-				(*jvm_args).version = JNI_VERSION_1_1;
-				break;
-			case 2:
-				(*jvm_args).version = JNI_VERSION_1_2;
-				break;
-			case 4:
-				(*jvm_args).version = JNI_VERSION_1_4;
-				break;
-			case 6:
-				(*jvm_args).version = JNI_VERSION_1_6;
-				break;
-			case 8:
-				(*jvm_args).version = JNI_VERSION_1_8;
-				break;
-			default:
-				(*jvm_args).version = JNI_VERSION_1_8;
-			}
-
 			//Create JavaVMOption structure and set elements.
-			JavaVMOption* options = (JavaVMOption*)malloc(sizeof(JavaVMOption)*options_count);
+			/*Codes_SRS_JAVA_MODULE_HOST_14_009: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided.]*/
+			JavaVMOption* options = options_count == 0 ? NULL : (JavaVMOption*)malloc(sizeof(JavaVMOption)*options_count);
 			if (options == NULL && options_count != 0)
 			{
 				LogError("Failed to allocate memory for JavaVMOption.");
@@ -475,6 +470,27 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 			}
 			else
 			{
+				/*Codes_SRS_JAVA_MODULE_HOST_14_030:[ The function shall set the JavaVMInitArgs structures nOptions, version and JavaVMOption* options member variables]*/
+				switch (jvm_options->version)
+				{
+				case 1:
+					(*jvm_args).version = JNI_VERSION_1_1;
+					break;
+				case 2:
+					(*jvm_args).version = JNI_VERSION_1_2;
+					break;
+				case 4:
+					(*jvm_args).version = JNI_VERSION_1_4;
+					break;
+				case 6:
+					(*jvm_args).version = JNI_VERSION_1_6;
+					break;
+				case 8:
+					(*jvm_args).version = JNI_VERSION_1_8;
+					break;
+				default:
+					(*jvm_args).version = JNI_VERSION_1_8;
+				}
 				(*jvm_args).nOptions = options_count;
 				(*jvm_args).options = options;
 				(*jvm_args).ignoreUnrecognized = 0;
@@ -482,132 +498,124 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 				//Set all options
 				if (jvm_options->class_path != NULL && result == 0)
 				{
-					char* cp = (char*)malloc(strlen("-Djava.class.path") + 1 + strlen(DEFAULT_CLASS_PATH) + 1 + strlen(jvm_options->class_path) + 1);
-					if (cp == NULL)
+					/*Codes_SRS_JAVA_MODULE_HOST_14_032:[ The function shall construct a new STRING_HANDLE for each option. ]*/
+					STRING_HANDLE class_path = STRING_construct("-Djava.class.path=");
+					if (class_path == NULL)
 					{
-						LogError("Failed to allocate memory for class path string.");
+						LogError("String_construct failed.");
 						result = __LINE__;
 					}
 					else
 					{
-						if(sprintf(cp, "%s=%s;%s", "-Djava.class.path", DEFAULT_CLASS_PATH, jvm_options->class_path) < 0)
+						/*Codes_SRS_JAVA_MODULE_HOST_14_033:[The function shall concatenate the user supplied options to the option key names.]*/
+						if (STRING_concat(class_path, jvm_options->class_path) != 0)
 						{
-							LogError("sprintf failed.");
+							/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
+							LogError("String_concat failed.");
+							STRING_delete(class_path);
 							result = __LINE__;
 						}
 						else
 						{
-							STRING_HANDLE class_path = STRING_construct(cp);
-							if (class_path == NULL)
+							/*Codes_SRS_JAVA_MODULE_HOST_14_034:[ The function shall push the new STRING_HANDLE onto the newly created vector. ]*/
+							if (VECTOR_push_back(*options_strings, &class_path, 1) != 0)
 							{
-								LogError("String_construct failed.");
+								/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
+								LogError("Failed to push class path onto vector.");
+								STRING_delete(class_path);
 								result = __LINE__;
 							}
 							else
 							{
-								if (VECTOR_push_back(*options_strings, &class_path, 1) != 0)
-								{
-									LogError("Failed to push class path onto vector.");
-									STRING_delete(class_path);
-									result = __LINE__;
-								}
-								else
-								{
-									options[--options_count].optionString = (char*)STRING_c_str(class_path);
-								}
+								options[--options_count].optionString = (char*)STRING_c_str(class_path);
 							}
 						}
-						free(cp);
 					}
 				}
 				if (jvm_options->library_path != NULL && result == 0)
 				{
-					char* lp = (char*)malloc(strlen("-Djava.library.path") + 1 + strlen(jvm_options->library_path) + 1);
-					if (lp == NULL)
+					/*Codes_SRS_JAVA_MODULE_HOST_14_032:[ The function shall construct a new STRING_HANDLE for each option. ]*/
+					STRING_HANDLE library_path = STRING_construct("-Djava.library.path=");
+					if (library_path == NULL)
 					{
-						LogError("Failed to allocate memory for library path string.");
+						LogError("String_construct failed.");
 						result = __LINE__;
 					}
 					else
 					{
-						if (sprintf(lp, "%s=%s", "-Djava.library.path", jvm_options->library_path) < 0)
+						/*Codes_SRS_JAVA_MODULE_HOST_14_033:[The function shall concatenate the user supplied options to the option key names.]*/
+						if (STRING_concat(library_path, jvm_options->library_path) != 0)
 						{
-							LogError("sprintf failed.");
+							/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
+							LogError("String_concat failed.");
+							STRING_delete(library_path);
 							result = __LINE__;
 						}
 						else
 						{
-							STRING_HANDLE library_path = STRING_construct(lp);
-							if (library_path == NULL)
+							/*Codes_SRS_JAVA_MODULE_HOST_14_034:[ The function shall push the new STRING_HANDLE onto the newly created vector. ]*/
+							if (VECTOR_push_back(*options_strings, &library_path, 1) != 0)
 							{
-								LogError("String_construct failed.");
+								/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
+								LogError("Failed to push library path onto vector.");
+								STRING_delete(library_path);
 								result = __LINE__;
 							}
 							else
 							{
-								if (VECTOR_push_back(*options_strings, &library_path, 1) != 0)
-								{
-									LogError("Failed to push library path onto vector.");
-									STRING_delete(library_path);
-									result = __LINE__;
-								}
-								else
-								{
-									options[--options_count].optionString = (char*)STRING_c_str(library_path);
-								}
+								options[--options_count].optionString = (char*)STRING_c_str(library_path);
 							}
 						}
-						free(lp);
 					}
 				}
 				if (jvm_options->debug == 1 && result == 0) {
-					char *debug_str = (char*)malloc(strlen("-Xrunjdwp:transport=dt_socket,address=0000,server=y,suspend=y") + 2);
-					if (debug_str == NULL)
+					char debug_str[64];
+					/*Codes_SRS_JAVA_MODULE_HOST_14_033:[The function shall concatenate the user supplied options to the option key names.]*/
+					if (sprintf(debug_str, "-Xrunjdwp:transport=dt_socket,address=%i,server=y,suspend=y", jvm_options->debug_port != 0 ? jvm_options->debug_port : DEBUG_PORT_DEFAULT) < 0)
 					{
-						LogError("Failed to allocate memoryfor the debug string.");
+						LogError("sprintf failed.");
 						result = __LINE__;
 					}
 					else
 					{
-						if (sprintf(debug_str, "-Xrunjdwp:transport=dt_socket,address=%i,server=y,suspend=y", jvm_options->debug_port != 0 ? jvm_options->debug_port : DEBUG_PORT_DEFAULT) < 0)
+						/*Codes_SRS_JAVA_MODULE_HOST_14_032:[ The function shall construct a new STRING_HANDLE for each option. ]*/
+						STRING_HANDLE debug_1 = STRING_construct("-Xrs");
+						STRING_HANDLE debug_2 = STRING_construct("-Xdebug"); 
+						STRING_HANDLE debug_3 = STRING_construct(debug_str);
+						if (debug_1 == NULL || debug_2 == NULL || debug_3 == NULL)
 						{
-							LogError("sprintf failed.");
+							/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
+							LogError("String_construct failed.");
+							STRING_delete(debug_1);
+							STRING_delete(debug_2);
+							STRING_delete(debug_3);
 							result = __LINE__;
 						}
 						else
 						{
-							STRING_HANDLE debug_1 = STRING_construct("-Xrs");
-							STRING_HANDLE debug_2 = STRING_construct("-Xdebug");
-							STRING_HANDLE debug_3 = STRING_construct(debug_str);
-							if (debug_1 == NULL || debug_2 == NULL || debug_3 == NULL)
+							/*Codes_SRS_JAVA_MODULE_HOST_14_034:[ The function shall push the new STRING_HANDLE onto the newly created vector. ]*/
+							if (VECTOR_push_back(*options_strings, &debug_1, 1) != 0 || 
+								VECTOR_push_back(*options_strings, &debug_2, 1) != 0 || 
+								VECTOR_push_back(*options_strings, &debug_3, 1) != 0)
 							{
-								LogError("String_construct failed.");
+								/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
+								LogError("Failed to push debug options onto vector.");
+								STRING_delete(debug_1);
+								STRING_delete(debug_2);
+								STRING_delete(debug_3);
 								result = __LINE__;
 							}
 							else
 							{
-								if (VECTOR_push_back(*options_strings, &debug_1, 1) != 0 || 
-									VECTOR_push_back(*options_strings, &debug_2, 1) != 0 || 
-									VECTOR_push_back(*options_strings, &debug_3, 1) != 0)
-								{
-									LogError("Failed to push debug options onto vector.");
-									STRING_delete(debug_1);
-									STRING_delete(debug_2);
-									STRING_delete(debug_3);
-									result = __LINE__;
-								}
-								else
-								{
-									options[--options_count].optionString = (char*)STRING_c_str(debug_1);
-									options[--options_count].optionString = (char*)STRING_c_str(debug_2);
-									options[--options_count].optionString = (char*)STRING_c_str(debug_3);
-								}
+								options[--options_count].optionString = (char*)STRING_c_str(debug_1);
+								options[--options_count].optionString = (char*)STRING_c_str(debug_2);
+								options[--options_count].optionString = (char*)STRING_c_str(debug_3);
 							}
 						}
-						free(debug_str);
 					}
 				}
 				if (jvm_options->verbose == 1 && result == 0) {
+					/*Codes_SRS_JAVA_MODULE_HOST_14_032:[ The function shall construct a new STRING_HANDLE for each option. ]*/
 					STRING_HANDLE verbose_str = STRING_construct("-verbose:class");
 					if (verbose_str == NULL)
 					{
@@ -616,8 +624,10 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 					}
 					else
 					{
+						/*Codes_SRS_JAVA_MODULE_HOST_14_034:[ The function shall push the new STRING_HANDLE onto the newly created vector. ]*/
 						if (VECTOR_push_back(*options_strings, &verbose_str, 1) != 0)
 						{
+							/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
 							LogError("Failed to push debug options onto vector.");
 							STRING_delete(verbose_str);
 							result = __LINE__;
@@ -638,6 +648,7 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 						}
 						else
 						{
+							/*Codes_SRS_JAVA_MODULE_HOST_14_036:[ The function shall copy any additional user options into a STRING_HANDLE. ]*/
 							STRING_HANDLE str = STRING_clone(*s);
 							if (str == NULL)
 							{
@@ -646,9 +657,12 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 							}
 							else
 							{
+								/*Codes_SRS_JAVA_MODULE_HOST_14_034:[ The function shall push the new STRING_HANDLE onto the newly created vector. ]*/
 								if (VECTOR_push_back(*options_strings, &str, 1) != 0)
 								{
+									/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
 									LogError("Failed to push additional option (%s) onto vector.", STRING_c_str(str));
+									STRING_delete(str);
 									result = __LINE__;
 								}
 								else
@@ -660,6 +674,12 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 						
 					}
 				}
+			}
+
+			/*Codes_SRS_JAVA_MODULE_HOST_14_035:[ If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array. ]*/
+			if (result != 0)
+			{
+				deinit_vm_options(jvm_args, *options_strings);
 			}
 		}
 	}
@@ -676,7 +696,10 @@ static void deinit_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE options_st
 		}
 		VECTOR_destroy(options_strings);
 	}
-	free((*jvm_args).options);
+	if ((*jvm_args).options != NULL)
+	{
+		free((*jvm_args).options);
+	}
 }
 
 static void destroy_module_internal(JAVA_MODULE_HANDLE_DATA* module)

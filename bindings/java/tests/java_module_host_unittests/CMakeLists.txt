@@ -21,4 +21,6 @@ set(${theseTestsName}_h_files
 
 include_directories(${GW_INC})
 
+add_definitions(-DUNDER_TEST)
+
 build_c_test_artifacts(${theseTestsName} ON "UnitTests")
