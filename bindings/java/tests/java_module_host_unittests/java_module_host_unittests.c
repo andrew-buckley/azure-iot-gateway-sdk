@@ -62,6 +62,14 @@ MOCK_FUNCTION_WITH_CODE(JNICALL, jobject, my_NewObject, JNIEnv*, env, jclass, cl
 return (jobject)0x42;
 MOCK_FUNCTION_END()
 
+MOCK_FUNCTION_WITH_CODE(JNICALL, jstring, my_NewStringUTF, JNIEnv*, env, const char*, utf);
+return (jstring)0x42;
+MOCK_FUNCTION_END()
+
+MOCK_FUNCTION_WITH_CODE(JNICALL, jobject, my_NewGlobalRef, JNIEnv*, env, jobject, lobj);
+return (jobject)malloc(1);
+MOCK_FUNCTION_END()
+
 MOCK_FUNCTION_WITH_CODE(JNICALL, jthrowable, my_ExceptionOccurred);
 return NULL;
 MOCK_FUNCTION_END()
@@ -150,7 +158,7 @@ jint mock_JNI_CreateJavaVM(JavaVM** pvm, void** penv, void* args)
 		0, 0, 0, 0, 
 		
 		0, 0, my_FindClass, 0, 0, 0, 0, 0, 0, 0,
-		0, my_ExceptionOccurred, 0, my_ExceptionClear, 0, 0, 0, 0, 0, 0,
+		0, my_ExceptionOccurred, 0, my_ExceptionClear, 0, 0, 0, my_NewGlobalRef, 0, 0,
 		0, 0, 0, 0, my_NewObject, 0, 0, 0, 0, my_GetMethodID,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
@@ -165,7 +173,7 @@ jint mock_JNI_CreateJavaVM(JavaVM** pvm, void** penv, void* args)
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
-		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
+		0, 0, 0, my_NewStringUTF, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
 		0, 0, 0, 0, 0, 0, 0, 0, 0, 0,
