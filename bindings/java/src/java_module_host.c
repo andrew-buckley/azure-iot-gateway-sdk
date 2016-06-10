@@ -76,20 +76,24 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 			}
 			else
 			{
+				//TODO: Requirements for this
+				result->env = NULL;
+				result->jvm = NULL;
+
 				result->moduleName = (char*)config->class_name;
-				if (JVM_Create(&(result->jvm), &(result->env), config->options) != JNI_OK)
+				result->manager = JavaModuleHostManager_Create();
+				if (result->manager == NULL)
 				{
-					/*Codes_SRS_JAVA_MODULE_HOST_14_013: [This function shall return NULL if a JVM could not be created or found.]*/
-					LogError("Failed to successfully create JVM.");
+					LogError("Failed to create a JAVA_MODULE_HOST_MANAGER_HANDLE.");
 					destroy_module_internal(result);
 					result = NULL;
 				}
 				else
 				{
-					result->manager = JavaModuleHostManager_Create();
-					if (result->manager == NULL)
+					if (JVM_Create(&(result->jvm), &(result->env), config->options) != JNI_OK)
 					{
-						LogError("Failed to create a JAVA_MODULE_HOST_MANAGER_HANDLE.");
+						/*Codes_SRS_JAVA_MODULE_HOST_14_013: [This function shall return NULL if a JVM could not be created or found.]*/
+						LogError("Failed to successfully create JVM.");
 						destroy_module_internal(result);
 						result = NULL;
 					}
@@ -423,10 +427,13 @@ static int JVM_Create(JavaVM** jvm, JNIEnv** env, JVM_OPTIONS* options)
 
 static void JVM_Destroy(JavaVM** jvm, JNIEnv* env)
 {
-	//TODO: Attach unnecessary
-	JNIFunc(*jvm, AttachCurrentThread, (void**)&env, NULL);
-	//TODO: Catch return
-	JNIFunc(*jvm, DestroyJavaVM);
+	if ((jvm && env) && (*jvm && &env))
+	{
+		//TODO: Attach unnecessary
+		JNIFunc(*jvm, AttachCurrentThread, (void**)&env, NULL);
+		//TODO: Catch return
+		JNIFunc(*jvm, DestroyJavaVM);
+	}
 }
 
 static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_strings, JVM_OPTIONS* jvm_options)
@@ -692,7 +699,11 @@ static void deinit_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE options_st
 	{
 		for (size_t options_count = 0; options_count < VECTOR_size(options_strings); options_count++)
 		{
-			STRING_delete(*((STRING_HANDLE*)VECTOR_element(options_strings, options_count)));
+			STRING_HANDLE* element = (STRING_HANDLE*)VECTOR_element(options_strings, options_count);
+			if (element != NULL)
+			{
+				STRING_delete(*element);
+			}
 		}
 		VECTOR_destroy(options_strings);
 	}
