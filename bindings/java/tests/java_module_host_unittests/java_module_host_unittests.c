@@ -133,6 +133,25 @@ MOCK_FUNCTION_END();
 //HOOKS
 //=============================================================================
 
+VECTOR_HANDLE real_VECTOR_create(size_t elementSize);
+void real_VECTOR_destroy(VECTOR_HANDLE handle);
+
+/* insertion */
+int real_VECTOR_push_back(VECTOR_HANDLE handle, const void* elements, size_t numElements);
+
+/* removal */
+void real_VECTOR_erase(VECTOR_HANDLE handle, void* elements, size_t numElements);
+void real_VECTOR_clear(VECTOR_HANDLE handle);
+
+/* access */
+void* real_VECTOR_element(const VECTOR_HANDLE handle, size_t index);
+void* real_VECTOR_front(const VECTOR_HANDLE handle);
+void* real_VECTOR_back(const VECTOR_HANDLE handle);
+void* real_VECTOR_find_if(const VECTOR_HANDLE handle, PREDICATE_FUNCTION pred, const void* value);
+
+/* capacity */
+size_t real_VECTOR_size(const VECTOR_HANDLE handle);
+
 void* my_gballoc_malloc(size_t size)
 {
 	void* result = NULL;
@@ -150,41 +169,33 @@ void my_gballoc_free(void* ptr)
 }
 
 //Vector mocks
-VECTOR_HANDLE my_VECTOR_create(size_t size)
-{
-	VECTOR_HANDLE handle = (VECTOR_HANDLE)malloc(1);
-	*(unsigned char*)handle = 0;
-	return handle;
-}
-
-int my_VECTOR_push_back(VECTOR_HANDLE handle, const void* elements, size_t numElements)
-{
-	*(unsigned char*)handle += 1;
-	return 0;
-}
-
-size_t my_VECTOR_size(VECTOR_HANDLE handle)
-{
-	return handle == NULL ? 0 : *(unsigned char*)handle;
-}
-
-void my_VECTOR_destroy(VECTOR_HANDLE handle)
-{
-	free(handle);
-}
+//VECTOR_HANDLE my_VECTOR_create(size_t size)
+//{
+//	VECTOR_HANDLE handle = (VECTOR_HANDLE)malloc(1);
+//	*(unsigned char*)handle = 0;
+//	return handle;
+//}
+//
+//int my_VECTOR_push_back(VECTOR_HANDLE handle, const void* elements, size_t numElements)
+//{
+//	*(unsigned char*)handle += 1;
+//	return 0;
+//}
+//
+//size_t my_VECTOR_size(VECTOR_HANDLE handle)
+//{
+//	return handle == NULL ? 0 : *(unsigned char*)handle;
+//}
+//
+//void my_VECTOR_destroy(VECTOR_HANDLE handle)
+//{
+//	free(handle);
+//}
 
 //String mocks
-STRING_HANDLE my_STRING_construct(const char* psz)
-{
-	STRING_HANDLE handle = (STRING_HANDLE)malloc(1);
-	//*(unsigned char*)handle = 1;
-	return handle;
-}
-
-void my_STRING_delete(STRING_HANDLE handle)
-{
-	free(handle);
-}
+STRING_HANDLE real_STRING_construct(const char* psz);
+void real_STRING_delete(STRING_HANDLE handle);
+const char* real_STRING_c_str(STRING_HANDLE handle);
 
 //Java Module Host Manager Mocks
 JAVA_MODULE_HOST_MANAGER_HANDLE my_JavaModuleHostManager_Create()
@@ -330,17 +341,21 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
 	REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, my_gballoc_malloc);
 	REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, my_gballoc_free);
 
-	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_create, my_VECTOR_create);
+	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_create, real_VECTOR_create);
 
-	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_push_back, my_VECTOR_push_back);
+	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_push_back, real_VECTOR_push_back);
 
-	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_size, my_VECTOR_size);
+	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_size, real_VECTOR_size);
 
-	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_destroy, my_VECTOR_destroy);
+	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_destroy, real_VECTOR_destroy);
 
-	REGISTER_GLOBAL_MOCK_HOOK(STRING_construct, my_STRING_construct);
+	REGISTER_GLOBAL_MOCK_HOOK(VECTOR_element, real_VECTOR_element);
 
-	REGISTER_GLOBAL_MOCK_HOOK(STRING_delete, my_STRING_delete);
+	REGISTER_GLOBAL_MOCK_HOOK(STRING_construct, real_STRING_construct);
+
+	REGISTER_GLOBAL_MOCK_HOOK(STRING_delete, real_STRING_delete);
+	
+	REGISTER_GLOBAL_MOCK_HOOK(STRING_c_str, real_STRING_c_str);
 
 	REGISTER_GLOBAL_MOCK_HOOK(JavaModuleHostManager_Create, my_JavaModuleHostManager_Create);
 
@@ -459,7 +474,7 @@ TEST_FUNCTION(JavaModuleHost_Create_malloc_failure_fails)
 }
 
 /*Tests_SRS_JAVA_MODULE_HOST_14_007: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options. ]*/
-TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_success)
+TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_no_additional_args_success)
 {
 	JVM_OPTIONS options = {
 		"class/path",
@@ -486,9 +501,11 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_success
 	STRICT_EXPECTED_CALL(JavaModuleHostManager_Create());
 
 	STRICT_EXPECTED_CALL(VECTOR_create(sizeof(STRING_HANDLE)));
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_PTR_ARG))
 		.IgnoreArgument(1);
-	STRICT_EXPECTED_CALL(STRING_construct(IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(STRING_construct(config2.options->class_path))
 		.IgnoreArgument(1);
 	STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
@@ -497,7 +514,7 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_success
 	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 
-	STRICT_EXPECTED_CALL(STRING_construct(IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(STRING_construct(config2.options->library_path))
 		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
@@ -540,7 +557,136 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_success
 		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, config.class_name))
+	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, config2.class_name))
+		.IgnoreArgument(1);
+	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(my_NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(my_NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+
+	//Act
+	MODULE_HANDLE result = JavaModuleHost_Create((MESSAGE_BUS_HANDLE)0x42, &config2);
+
+	//Assert
+	ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
+
+	//Cleanup
+	JavaModuleHost_Destroy(result);
+}
+
+/*Tests_SRS_JAVA_MODULE_HOST_14_007: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options. ]*/
+TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_additional_args_success)
+{
+	VECTOR_HANDLE additional_options = VECTOR_create(sizeof(STRING_HANDLE));
+	STRING_HANDLE option1 = STRING_construct("option1");
+	STRING_HANDLE option2 = STRING_construct("option2");
+	STRING_HANDLE option3 = STRING_construct("option3");
+	VECTOR_push_back(additional_options, &option1, 1);
+	VECTOR_push_back(additional_options, &option2, 1);
+	VECTOR_push_back(additional_options, &option3, 1);
+
+	JVM_OPTIONS options = {
+		"class/path",
+		"library/path",
+		8,
+		false,
+		-1,
+		false,
+		additional_options
+	};
+
+	JAVA_MODULE_HOST_CONFIG config2 =
+	{
+		"TestClass",
+		"{hello}",
+		&options
+	};
+
+	//Arrange
+
+	STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_PTR_ARG)) /*this is for the structure*/
+		.IgnoreArgument(1);
+
+	STRICT_EXPECTED_CALL(JavaModuleHostManager_Create());
+
+	STRICT_EXPECTED_CALL(VECTOR_create(sizeof(STRING_HANDLE)));
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_PTR_ARG))
+		.IgnoreArgument(1);
+
+	STRICT_EXPECTED_CALL(STRING_construct(IGNORED_PTR_ARG))
+		.IgnoreArgument(1);
+	STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, config2.options->class_path))
+		.IgnoreArgument(1);
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(STRING_construct(NULL))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, config2.options->library_path))
+		.IgnoreArgument(1);
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments();
+
+
+	STRICT_EXPECTED_CALL(JNI_CreateJavaVM(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 0))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 0))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_destroy(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(gballoc_free(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(JavaModuleHostManager_Add(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, config2.class_name))
 		.IgnoreArgument(1);
 	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
 

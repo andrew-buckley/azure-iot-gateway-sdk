@@ -13,7 +13,8 @@ ${theseTestsName}.c
 
 set(${theseTestsName}_c_files
 	../../src/java_module_host_hl.c
-
+	../real_vector.c
+	../real_string.c
 )
 
 set(${theseTestsName}_h_files
