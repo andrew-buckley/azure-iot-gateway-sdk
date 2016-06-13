@@ -4,6 +4,14 @@
 cmake_minimum_required(VERSION 2.8.11)
 #this is CMakeLists for java binding
 
+# Check if the environment variables NODE_INCLUDE and NODE_LIB exist
+if(
+    (NOT (DEFINED ENV{JAVA_HOME}))
+  )
+  message(FATAL_ERROR "Environment variable JAVA_HOME is not defined. Please define "
+                      "JAVA_HOME to point to the location of the JDK.")
+endif()
+
 set(java_module_host_manager_sources
     ./src/java_module_host_manager.c
 )

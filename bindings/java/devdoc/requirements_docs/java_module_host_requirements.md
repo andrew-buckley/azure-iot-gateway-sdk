@@ -75,6 +75,8 @@ pointer to a `JAVA_MODULE_HOST_CONFIG` structure.
 
 **SRS_JAVA_MODULE_HOST_14_006: [** This function shall allocate memory for an instance of a `JAVA_MODULE_HANDLE_DATA` structure to be used as the backing structure for this module. **]**
 
+**SRS_JAVA_MODULE_HOST_14_037: [** This function shall get a singleton instance of a JavaModuleHostManager. **]**
+
 **SRS_JAVA_MODULE_HOST_14_007: [** This function shall initialize a `JavaVMInitArgs` structure using the `JVM_OPTIONS` structure `configuration->options`. **]**
 
 **SRS_JAVA_MODULE_HOST_14_008: [** If `configuration->options` is `NULL`**,** `JavaVMInitArgs` shall be initialized using default values. **]**
@@ -99,7 +101,7 @@ pointer to a `JAVA_MODULE_HOST_CONFIG` structure.
 
 **SRS_JAVA_MODULE_HOST_14_011: [** If the JVM was previously created, the function shall get a pointer to that `JavaVM` pointer and `JNIEnv` environment pointer. **]**
 
-**SRS_JAVA_MODULE_HOST_14_012: [** This function shall increment the `JAVA_MODULE_COUNT` global variable. **]**
+**SRS_JAVA_MODULE_HOST_14_012: [** This function shall increment the count of modules in the JavaModuleHostManager. **]**
 
 **SRS_JAVA_MODULE_HOST_14_013: [** This function shall return `NULL` if a JVM could not be created or found. **]**
 

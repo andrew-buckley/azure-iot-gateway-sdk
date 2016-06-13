@@ -4,4 +4,6 @@
 cmake_minimum_required(VERSION 2.8.11)
 #this is CMakeLists for the bindings
 
-add_subdirectory(java)
+if(${enable_java_binding})
+    add_subdirectory(java)
+endif()

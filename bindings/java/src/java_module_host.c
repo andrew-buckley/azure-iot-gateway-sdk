@@ -79,8 +79,9 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 				//TODO: Requirements for this
 				result->env = NULL;
 				result->jvm = NULL;
-
 				result->moduleName = (char*)config->class_name;
+
+				/*Codes_SRS_JAVA_MODULE_HOST_14_037: [This function shall get a singleton instance of a JavaModuleHostManager. ]*/
 				result->manager = JavaModuleHostManager_Create();
 				if (result->manager == NULL)
 				{
@@ -99,7 +100,7 @@ static MODULE_HANDLE JavaModuleHost_Create(MESSAGE_BUS_HANDLE bus, const void* c
 					}
 					else
 					{
-						/*Codes_SRS_JAVA_MODULE_HOST_14_012: [This function shall increment the JAVA_MODULE_COUNT global variable.]*/
+						/*Codes_SRS_JAVA_MODULE_HOST_14_012: [This function shall increment the count of modules in the JavaModuleHostManager. ]*/
 						if (JavaModuleHostManager_Add(result->manager) == MANAGER_ERROR)
 						{
 							LogError("JavaModuleHostManager_Add failed.");
@@ -467,10 +468,11 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 			options_count += (jvm_options->verbose == true ? 1 : 0);
 			options_count += VECTOR_size(jvm_options->additional_options);
 
-			//Create JavaVMOption structure and set elements.
 			/*Codes_SRS_JAVA_MODULE_HOST_14_009: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided.]*/
-			JavaVMOption* options = options_count == 0 ? NULL : (JavaVMOption*)malloc(sizeof(JavaVMOption)*options_count);
-			if (options == NULL && options_count != 0)
+			(*jvm_args).options = options_count == 0 ? NULL : (JavaVMOption*)malloc(sizeof(JavaVMOption)*options_count);
+			(*jvm_args).nOptions = options_count;
+			(*jvm_args).ignoreUnrecognized = 0;
+			if ((*jvm_args).options == NULL && options_count != 0)
 			{
 				LogError("Failed to allocate memory for JavaVMOption.");
 				result = __LINE__;
@@ -498,9 +500,6 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 				default:
 					(*jvm_args).version = JNI_VERSION_1_8;
 				}
-				(*jvm_args).nOptions = options_count;
-				(*jvm_args).options = options;
-				(*jvm_args).ignoreUnrecognized = 0;
 
 				//Set all options
 				if (jvm_options->class_path != NULL && result == 0)
@@ -534,7 +533,7 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 							}
 							else
 							{
-								options[--options_count].optionString = (char*)STRING_c_str(class_path);
+								(*jvm_args).options[--options_count].optionString = (char*)STRING_c_str(class_path);
 							}
 						}
 					}
@@ -570,7 +569,7 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 							}
 							else
 							{
-								options[--options_count].optionString = (char*)STRING_c_str(library_path);
+								(*jvm_args).options[--options_count].optionString = (char*)STRING_c_str(library_path);
 							}
 						}
 					}
@@ -614,9 +613,9 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 							}
 							else
 							{
-								options[--options_count].optionString = (char*)STRING_c_str(debug_1);
-								options[--options_count].optionString = (char*)STRING_c_str(debug_2);
-								options[--options_count].optionString = (char*)STRING_c_str(debug_3);
+								(*jvm_args).options[--options_count].optionString = (char*)STRING_c_str(debug_1);
+								(*jvm_args).options[--options_count].optionString = (char*)STRING_c_str(debug_2);
+								(*jvm_args).options[--options_count].optionString = (char*)STRING_c_str(debug_3);
 							}
 						}
 					}
@@ -641,7 +640,7 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 						}
 						else
 						{
-							options[--options_count].optionString = (char*)STRING_c_str(verbose_str);
+							(*jvm_args).options[--options_count].optionString = (char*)STRING_c_str(verbose_str);
 						}
 					}
 				}
@@ -674,7 +673,7 @@ static int init_vm_options(JavaVMInitArgs* jvm_args, VECTOR_HANDLE* options_stri
 								}
 								else
 								{
-									options[--options_count].optionString = (char*)STRING_c_str(str);
+									(*jvm_args).options[--options_count].optionString = (char*)STRING_c_str(str);
 								}
 							}
 						}

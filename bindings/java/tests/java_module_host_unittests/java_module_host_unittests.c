@@ -9,6 +9,8 @@
 #include <stddef.h>
 
 #include "testrunnerswitcher.h"
+#include "umock_c.h"
+#include "umock_c_negative_tests.h"
 
 #define ENABLE_MOCKS
 
@@ -68,62 +70,75 @@ MOCKABLE_FUNCTION(JNICALL, jint, JNI_CreateJavaVM, JavaVM**, pvm, void **, penv,
 MOCKABLE_FUNCTION(JNICALL, jint, JNI_GetCreatedJavaVMs, JavaVM **, pvm, jsize, count, jsize*, size);
 
 //JEnv function mocks
-MOCK_FUNCTION_WITH_CODE(JNICALL, jclass, my_FindClass, JNIEnv*, env, const char*, name);
-return (jclass)0x42;
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jclass, FindClass, JNIEnv*, env, const char*, name);
+jclass my_FindClass(JNIEnv* env, const char* name)
+{
+	return (jclass)0x42;
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jclass, my_GetObjectClass, JNIEnv*, env, jobject, obj);
-return (jclass)0x42;
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jclass, GetObjectClass, JNIEnv*, env, jobject, obj);
+jclass my_GetObjectClass(JNIEnv* env, jobject obj)
+{
+	return (jclass)0x42;
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jmethodID, my_GetMethodID, JNIEnv*, env, jclass, clazz, const char*, name, const char*, sig);
-return (jmethodID)0x42;
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jmethodID, GetMethodID, JNIEnv*, env, jclass, clazz, const char*, name, const char*, sig);
+jmethodID my_GetMethodID(JNIEnv* env, jclass clazz, const char* name, const char* sig)
+{
+	return (jmethodID)0x42;
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jobject, my_NewObject, JNIEnv*, env, jclass, clazz, jmethodID, methodID);
-return (jobject)0x42;
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jobject, NewObject, JNIEnv*, env, jclass, clazz, jmethodID, methodID);
+jobject my_NewObject(JNIEnv* env, jclass clazz, jmethodID methodID)
+{
+	return (jobject)0x42;
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jstring, my_NewStringUTF, JNIEnv*, env, const char*, utf);
-return (jstring)0x42;
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jstring, NewStringUTF, JNIEnv*, env, const char*, utf)
+jstring my_NewStringUTF(JNIEnv* env, const char* utf)
+{
+	return (jstring)0x42;
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jobject, my_NewGlobalRef, JNIEnv*, env, jobject, lobj);
-return (jobject)malloc(1);
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jobject, NewGlobalRef, JNIEnv*, env, jobject, lobj);
+jobject my_NewGlobalRef(JNIEnv* env, jobject lobj)
+{
+	return (jobject)malloc(1);
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, void, my_DeleteGlobalRef, JNIEnv*, env, jobject, gref);
-free(gref);
-MOCK_FUNCTION_END();
+MOCKABLE_FUNCTION(JNICALL, void, DeleteGlobalRef, JNIEnv*, env, jobject, gref);
+void my_DeleteGlobalRef(JNIEnv* env, jobject gref)
+{
+	free(gref);
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, void, my_CallVoidMethod, JNIEnv*, env, jmethodID, methodID);
-MOCK_FUNCTION_END();
+MOCKABLE_FUNCTION(JNICALL, void, CallVoidMethod, JNIEnv*, env, jmethodID, methodID);
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jthrowable, my_ExceptionOccurred);
-return NULL;
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jthrowable, ExceptionOccurred);
+jthrowable my_ExceptionOccurred()
+{
+	return NULL;
+}
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, void, my_ExceptionClear);
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, void, ExceptionClear);
+MOCKABLE_FUNCTION(JNICALL, void, ExceptionDescribe);
 
 //JVM function mocks
-MOCK_FUNCTION_WITH_CODE(JNICALL, jint, my_AttachCurrentThread, JavaVM*, vm, void**, penv, void*, args);
-return JNI_OK;
-MOCK_FUNCTION_END()
+MOCKABLE_FUNCTION(JNICALL, jint, AttachCurrentThread, JavaVM*, vm, void**, penv, void*, args);
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jint, my_DetachCurrentThread, JavaVM*, vm);
-return JNI_OK;
-MOCK_FUNCTION_END();
+MOCKABLE_FUNCTION(JNICALL, jint, DetachCurrentThread, JavaVM*, vm);
 
-MOCK_FUNCTION_WITH_CODE(JNICALL, jint, my_DestroyJavaVM, JavaVM*, vm);
+MOCKABLE_FUNCTION(JNICALL, jint, DestroyJavaVM, JavaVM*, vm);
+jint my_DestroyJavaVM(JavaVM* vm)
+{
 
-free((void*)(*global_env));
-free((void*)global_env);
-free((void*)(*vm));
-free((void*)vm);
+	free((void*)(*global_env));
+	free((void*)global_env);
+	free((void*)(*vm));
+	free((void*)vm);
 
-return JNI_OK;
-MOCK_FUNCTION_END();
+	return JNI_OK;
+}
 
 #undef ENABLE_MOCKS
 
@@ -168,34 +183,12 @@ void my_gballoc_free(void* ptr)
 	free(ptr);
 }
 
-//Vector mocks
-//VECTOR_HANDLE my_VECTOR_create(size_t size)
-//{
-//	VECTOR_HANDLE handle = (VECTOR_HANDLE)malloc(1);
-//	*(unsigned char*)handle = 0;
-//	return handle;
-//}
-//
-//int my_VECTOR_push_back(VECTOR_HANDLE handle, const void* elements, size_t numElements)
-//{
-//	*(unsigned char*)handle += 1;
-//	return 0;
-//}
-//
-//size_t my_VECTOR_size(VECTOR_HANDLE handle)
-//{
-//	return handle == NULL ? 0 : *(unsigned char*)handle;
-//}
-//
-//void my_VECTOR_destroy(VECTOR_HANDLE handle)
-//{
-//	free(handle);
-//}
-
 //String mocks
 STRING_HANDLE real_STRING_construct(const char* psz);
 void real_STRING_delete(STRING_HANDLE handle);
 const char* real_STRING_c_str(STRING_HANDLE handle);
+STRING_HANDLE real_STRING_clone(STRING_HANDLE handle);
+int real_STRING_concat(STRING_HANDLE handle, const char* s2);
 
 //Java Module Host Manager Mocks
 JAVA_MODULE_HOST_MANAGER_HANDLE my_JavaModuleHostManager_Create()
@@ -257,15 +250,12 @@ jint mock_JNI_CreateJavaVM(JavaVM** pvm, void** penv, void* args)
 	struct JNINativeInterface_ env = {
 		0, 0, 0, 0, 
 		
-		NULL, NULL, my_FindClass, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, my_ExceptionOccurred, NULL, my_ExceptionClear, NULL, NULL, NULL, my_NewGlobalRef, my_DeleteGlobalRef, NULL,
-		NULL, NULL, NULL, NULL, my_NewObject, NULL, NULL, my_GetObjectClass, NULL, my_GetMethodID,
+		NULL, NULL, FindClass, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+		NULL, ExceptionOccurred, ExceptionDescribe, ExceptionClear, NULL, NULL, NULL, NewGlobalRef, DeleteGlobalRef, NULL,
+		NULL, NULL, NULL, NULL, NewObject, NULL, NULL, GetObjectClass, NULL, GetMethodID,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, my_CallVoidMethod, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+		NULL, NULL, NULL, NULL, NULL, NULL, NULL, CallVoidMethod, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -273,7 +263,10 @@ jint mock_JNI_CreateJavaVM(JavaVM** pvm, void** penv, void* args)
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-		NULL, NULL, NULL, my_NewStringUTF, NULL, NULL, NULL, NULL, NULL, NULL,
+		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
+		NULL, NULL, NULL, NewStringUTF, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
 		NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL,
@@ -287,9 +280,9 @@ jint mock_JNI_CreateJavaVM(JavaVM** pvm, void** penv, void* args)
 		0,
 		0,
 
-		my_DestroyJavaVM,
-		my_AttachCurrentThread,
-		my_DetachCurrentThread,
+		DestroyJavaVM,
+		AttachCurrentThread,
+		DetachCurrentThread,
 		NULL,
 		NULL
 	};
@@ -324,6 +317,8 @@ static pfModule_Create  JavaModuleHost_Create = NULL; /*gets assigned in TEST_SU
 static pfModule_Destroy JavaModuleHost_Destroy = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Receive JavaModuleHost_Receive = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 
+IMPLEMENT_UMOCK_C_ENUM_TYPE(JAVA_MODULE_HOST_MANAGER_RESULT, JAVA_MODULE_HOST_MANAGER_RESULT_VALUES);
+
 BEGIN_TEST_SUITE(JavaModuleHost_UnitTests)
 
 TEST_SUITE_INITIALIZE(TestClassInitialize)
@@ -337,6 +332,25 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
 	JavaModuleHost_Receive = Module_GetAPIS()->Module_Receive;
 
 	umock_c_init(on_umock_c_error);
+
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(FindClass, NULL);
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(GetObjectClass, NULL);
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(GetMethodID, NULL);
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(NewObject, NULL);
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(NewStringUTF, NULL);
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(NewGlobalRef, NULL);
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(AttachCurrentThread, JNI_ERR);
+	REGISTER_GLOBAL_MOCK_FAIL_RETURN(DetachCurrentThread, JNI_ERR);
+
+	REGISTER_GLOBAL_MOCK_HOOK(FindClass, my_FindClass);
+	REGISTER_GLOBAL_MOCK_HOOK(GetObjectClass, my_GetObjectClass);
+	REGISTER_GLOBAL_MOCK_HOOK(GetMethodID, my_GetMethodID);
+	REGISTER_GLOBAL_MOCK_HOOK(NewObject, my_NewObject);
+	REGISTER_GLOBAL_MOCK_HOOK(NewStringUTF, my_NewStringUTF);
+	REGISTER_GLOBAL_MOCK_HOOK(NewGlobalRef, my_NewGlobalRef);
+	REGISTER_GLOBAL_MOCK_HOOK(DeleteGlobalRef, my_DeleteGlobalRef);
+	REGISTER_GLOBAL_MOCK_HOOK(ExceptionOccurred, my_ExceptionOccurred);
+	REGISTER_GLOBAL_MOCK_HOOK(DestroyJavaVM, my_DestroyJavaVM);
 
 	REGISTER_GLOBAL_MOCK_HOOK(gballoc_malloc, my_gballoc_malloc);
 	REGISTER_GLOBAL_MOCK_HOOK(gballoc_free, my_gballoc_free);
@@ -356,6 +370,10 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
 	REGISTER_GLOBAL_MOCK_HOOK(STRING_delete, real_STRING_delete);
 	
 	REGISTER_GLOBAL_MOCK_HOOK(STRING_c_str, real_STRING_c_str);
+
+	REGISTER_GLOBAL_MOCK_HOOK(STRING_clone, real_STRING_clone);
+
+	REGISTER_GLOBAL_MOCK_HOOK(STRING_concat, real_STRING_concat);
 
 	REGISTER_GLOBAL_MOCK_HOOK(JavaModuleHostManager_Create, my_JavaModuleHostManager_Create);
 
@@ -380,6 +398,8 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
 	REGISTER_UMOCK_ALIAS_TYPE(jclass, void*);
 	REGISTER_UMOCK_ALIAS_TYPE(jmethodID, void*);
 	REGISTER_UMOCK_ALIAS_TYPE(jobject, void*);
+
+	REGISTER_TYPE(JAVA_MODULE_HOST_MANAGER_RESULT, JAVA_MODULE_HOST_MANAGER_RESULT);
 }
 
 TEST_SUITE_CLEANUP(TestClassCleanup)
@@ -473,7 +493,250 @@ TEST_FUNCTION(JavaModuleHost_Create_malloc_failure_fails)
 	ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 }
 
+/*Tests_SRS_JAVA_MODULE_HOST_14_004: [This function shall return NULL upon any underlying API call failure.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_035: [If any operation fails, the function shall delete the STRING_HANDLE structures, VECTOR_HANDLE and JavaVMOption array.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_013: [This function shall return NULL if a JVM could not be created or found.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_016: [This function shall return NULL if any returned jclass, jmethodID, or jobject is NULL.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_017: [This function shall return NULL if any JNI function fails.]*/
+TEST_FUNCTION(JavaModuleHost_Create_API_failure_tests)
+{
+	VECTOR_HANDLE additional_options = VECTOR_create(sizeof(STRING_HANDLE));
+	STRING_HANDLE option1 = STRING_construct("option1");
+	STRING_HANDLE option2 = STRING_construct("option2");
+	STRING_HANDLE option3 = STRING_construct("option3");
+	VECTOR_push_back(additional_options, &option1, 1);
+	VECTOR_push_back(additional_options, &option2, 1);
+	VECTOR_push_back(additional_options, &option3, 1);
+
+	umock_c_reset_all_calls();
+
+	JVM_OPTIONS options = {
+		"class/path",
+		"library/path",
+		8,
+		false,
+		-1,
+		false,
+		additional_options
+	};
+
+	JAVA_MODULE_HOST_CONFIG config2 =
+	{
+		"TestClass",
+		"{hello}",
+		&options
+	};
+
+	//Arrange
+
+	int result = 0;
+	result = umock_c_negative_tests_init();
+	ASSERT_ARE_EQUAL(int, 0, result);
+
+	STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_PTR_ARG)) /*this is for the structure*/
+		.IgnoreArgument(1);
+
+	STRICT_EXPECTED_CALL(JavaModuleHostManager_Create());
+
+	STRICT_EXPECTED_CALL(VECTOR_create(sizeof(STRING_HANDLE)));
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(gballoc_malloc(IGNORED_PTR_ARG))
+		.IgnoreArgument(1);
+
+	STRICT_EXPECTED_CALL(STRING_construct(IGNORED_PTR_ARG))
+		.IgnoreArgument(1);
+	STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, config2.options->class_path))
+		.IgnoreArgument(1)
+		.SetFailReturn(-1);
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments()
+		.SetFailReturn(-1);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(STRING_construct(NULL))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_concat(IGNORED_PTR_ARG, config2.options->library_path))
+		.IgnoreArgument(1)
+		.SetFailReturn(-1);
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments()
+		.SetFailReturn(-1);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 0))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_clone(option1));
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreArgument(1).IgnoreArgument(2)
+		.SetFailReturn(-1);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_clone(option2));
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreArgument(1).IgnoreArgument(2)
+		.SetFailReturn(-1);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 2))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_clone(option3));
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreArgument(1).IgnoreArgument(2)
+		.SetFailReturn(-1);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+
+	STRICT_EXPECTED_CALL(JNI_CreateJavaVM(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments()
+		.SetFailReturn(JNI_ERR);
+
+	//30
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 0))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 2))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 3))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 4))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_destroy(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(gballoc_free(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(JavaModuleHostManager_Add(IGNORED_PTR_ARG))
+		.IgnoreAllArguments()
+		.SetFailReturn(MANAGER_ERROR);
+
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, config2.class_name))
+		.IgnoreArgument(1);
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
+
+	STRICT_EXPECTED_CALL(NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	umock_c_negative_tests_snapshot();
+
+	//act
+	for (size_t i = 0; i < umock_c_negative_tests_call_count(); i++)
+	{
+		if (i != 3 &&
+			i != 8 &&
+			i != 12 &&
+			i != 13 &&
+			i != 17 &&
+			i != 18 &&
+			i != 22 &&
+			i != 23 &&
+			i != 27 &&
+			i != 28 &&
+			(i < 30 || i > 47) &&
+			i != 50 &&
+			i != 52 &&
+			i != 54 &&
+			i != 56 &&
+			i != 58 &&
+			i != 60 &&
+			i != 62)
+		{
+			// arrange
+			umock_c_negative_tests_reset();
+			umock_c_negative_tests_fail_call(i);
+
+			// act
+			MODULE_HANDLE result = JavaModuleHost_Create((MESSAGE_BUS_HANDLE)0x42, &config2);
+
+			// assert
+			ASSERT_ARE_EQUAL(void_ptr, NULL, result);
+
+			//cleanup
+		}
+	}
+	umock_c_negative_tests_deinit();
+
+}
+
+/*Tests_SRS_JAVA_MODULE_HOST_14_005: [This function shall return a non-NULL MODULE_HANDLE when successful. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_006: [This function shall allocate memory for an instance of a JAVA_MODULE_HANDLE_DATA structure to be used as the backing structure for this module. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_037: [This function shall get a singleton instance of a JavaModuleHostManager.]*/
 /*Tests_SRS_JAVA_MODULE_HOST_14_007: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_009: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_010: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_012: [This function shall increment the count of modules in the JavaModuleHostManager. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_014: [This function shall find the MessageBus Java class, get the constructor, and create a MessageBus Java object.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_015 :[This function shall find the user - defined Java module class using configuration->class_name, get the constructor, and create an instance of this module object.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_018: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_030: [The function shall set the JavaVMInitArgs structures nOptions, version and JavaVMOption* options member variables]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_031: [The function shall create a new VECTOR_HANDLE to store the option strings.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_032: [The function shall construct a new STRING_HANDLE for each option.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_033: [The function shall concatenate the user supplied options to the option key names.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_034: [The function shall push the new STRING_HANDLE onto the newly created vector.]*/
 TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_no_additional_args_success)
 {
 	JVM_OPTIONS options = {
@@ -530,9 +793,13 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_no_addi
 		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 0))
 		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 0))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
@@ -545,35 +812,35 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_no_addi
 	STRICT_EXPECTED_CALL(JavaModuleHostManager_Add(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 
-	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, config2.class_name))
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, config2.class_name))
 		.IgnoreArgument(1);
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
+	STRICT_EXPECTED_CALL(NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 
 
@@ -585,9 +852,25 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_no_addi
 
 	//Cleanup
 	JavaModuleHost_Destroy(result);
+
 }
 
+/*Tests_SRS_JAVA_MODULE_HOST_14_005: [This function shall return a non-NULL MODULE_HANDLE when successful. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_006: [This function shall allocate memory for an instance of a JAVA_MODULE_HANDLE_DATA structure to be used as the backing structure for this module. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_037: [This function shall get a singleton instance of a JavaModuleHostManager.]*/
 /*Tests_SRS_JAVA_MODULE_HOST_14_007: [This function shall initialize a JavaVMInitArgs structure using the JVM_OPTIONS structure configuration->options. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_009: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_010: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_012: [This function shall increment the count of modules in the JavaModuleHostManager. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_014: [This function shall find the MessageBus Java class, get the constructor, and create a MessageBus Java object.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_015 :[This function shall find the user - defined Java module class using configuration->class_name, get the constructor, and create an instance of this module object.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_018: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_030: [The function shall set the JavaVMInitArgs structures nOptions, version and JavaVMOption* options member variables]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_031: [The function shall create a new VECTOR_HANDLE to store the option strings.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_032: [The function shall construct a new STRING_HANDLE for each option.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_036: [The function shall copy any additional user options into a STRING_HANDLE.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_033: [The function shall concatenate the user supplied options to the option key names.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_034: [The function shall push the new STRING_HANDLE onto the newly created vector.]*/
 TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_additional_args_success)
 {
 	VECTOR_HANDLE additional_options = VECTOR_create(sizeof(STRING_HANDLE));
@@ -597,6 +880,8 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_additio
 	VECTOR_push_back(additional_options, &option1, 1);
 	VECTOR_push_back(additional_options, &option2, 1);
 	VECTOR_push_back(additional_options, &option3, 1);
+
+	umock_c_reset_all_calls();
 
 	JVM_OPTIONS options = {
 		"class/path",
@@ -648,7 +933,35 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_additio
 
 	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 0))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_clone(option1));
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreArgument(1).IgnoreArgument(2);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_clone(option2));
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreArgument(1).IgnoreArgument(2);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 2))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_clone(option3));
+	STRICT_EXPECTED_CALL(VECTOR_push_back(IGNORED_PTR_ARG, IGNORED_PTR_ARG, 1))
+		.IgnoreArgument(1).IgnoreArgument(2);
+	STRICT_EXPECTED_CALL(STRING_c_str(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 
 
@@ -659,9 +972,31 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_additio
 		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 0))
 		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 0))
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 1))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 2))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 3))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(VECTOR_element(IGNORED_PTR_ARG, 4))
+		.IgnoreAllArguments();
+	STRICT_EXPECTED_CALL(STRING_delete(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 	STRICT_EXPECTED_CALL(VECTOR_size(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
@@ -674,35 +1009,35 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_additio
 	STRICT_EXPECTED_CALL(JavaModuleHostManager_Add(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 
-	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, config2.class_name))
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, config2.class_name))
 		.IgnoreArgument(1);
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
+	STRICT_EXPECTED_CALL(NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 
 
@@ -710,14 +1045,27 @@ TEST_FUNCTION(JavaModuleHost_Create_initializes_JavaVMInitArgs_structure_additio
 	MODULE_HANDLE result = JavaModuleHost_Create((MESSAGE_BUS_HANDLE)0x42, &config2);
 
 	//Assert
+	ASSERT_IS_NOT_NULL(result);
 	ASSERT_ARE_EQUAL(char_ptr, umock_c_get_expected_calls(), umock_c_get_actual_calls());
 
 	//Cleanup
 	JavaModuleHost_Destroy(result);
+	STRING_delete(option1);
+	STRING_delete(option2);
+	STRING_delete(option3);
+	VECTOR_destroy(additional_options);
 }
 
+/*Tests_SRS_JAVA_MODULE_HOST_14_005: [This function shall return a non-NULL MODULE_HANDLE when successful. ]*/
 /*Tests_SRS_JAVA_MODULE_HOST_14_006: [This function shall allocate memory for an instance of a JAVA_MODULE_HANDLE_DATA structure to be used as the backing structure for this module. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_037: [This function shall get a singleton instance of a JavaModuleHostManager.]*/
 /*Tests_SRS_JAVA_MODULE_HOST_14_008: [If configuration->options is NULL, JavaVMInitArgs shall be initialized using default values. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_009: [This function shall allocate memory for an array of JavaVMOption structures and initialize each with each option provided. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_010: [If this is the first Java module to load, this function shall create the JVM using the JavaVMInitArgs through a call to JNI_CreateJavaVM and save the JavaVM and JNIEnv pointers in the JAVA_MODULE_HANDLE_DATA. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_012: [This function shall increment the count of modules in the JavaModuleHostManager. ]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_014: [This function shall find the MessageBus Java class, get the constructor, and create a MessageBus Java object.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_015 :[This function shall find the user - defined Java module class using configuration->class_name, get the constructor, and create an instance of this module object.]*/
+/*Tests_SRS_JAVA_MODULE_HOST_14_018: [The function shall save a new global reference to the Java module object in JAVA_MODULE_HANDLE_DATA->module. ]*/
 TEST_FUNCTION(JavaModuleHost_Create_allocates_structure_success)
 {
 	//Arrange
@@ -735,37 +1083,36 @@ TEST_FUNCTION(JavaModuleHost_Create_allocates_structure_success)
 	STRICT_EXPECTED_CALL(JavaModuleHostManager_Add(IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
 
-	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_FindClass(IGNORED_PTR_ARG, config.class_name))
+	STRICT_EXPECTED_CALL(FindClass(IGNORED_PTR_ARG, config.class_name))
 		.IgnoreArgument(1);
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(GetMethodID(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
+	STRICT_EXPECTED_CALL(NewStringUTF(IGNORED_PTR_ARG, config.configuration_json))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewObject(IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-	STRICT_EXPECTED_CALL(my_ExceptionOccurred());
+	STRICT_EXPECTED_CALL(ExceptionOccurred());
 
-	STRICT_EXPECTED_CALL(my_NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
+	STRICT_EXPECTED_CALL(NewGlobalRef(IGNORED_PTR_ARG, IGNORED_PTR_ARG))
 		.IgnoreAllArguments();
-
 
 	//Act
 	MODULE_HANDLE result = JavaModuleHost_Create((MESSAGE_BUS_HANDLE)0x42, &config);
