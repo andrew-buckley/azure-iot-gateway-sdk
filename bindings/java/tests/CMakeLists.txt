@@ -5,4 +5,4 @@ cmake_minimum_required(VERSION 2.8.11)
 #this is CMakeLists for logger tests folder
 
 add_subdirectory(java_module_host_unittests)
-add_subdirectory(java_module_host_hl_unittests)
+#add_subdirectory(java_module_host_hl_unittests)

@@ -24,11 +24,11 @@ typedef signed char jbyte;
 #include "message_bus_proxy.h"
 #include "java_module_host_common.h"
 #include "java_module_host.h"
-#include "azure_c_shared_utility\iot_logging.h"
-#include "azure_c_shared_utility\gballoc.h"
+#include "azure_c_shared_utility/iot_logging.h"
+#include "azure_c_shared_utility/gballoc.h"
 //#include <vld.h>
 
-#define JNIFunc(jptr, call, ...) (*(jptr))->call(jptr, __VA_ARGS__)
+#define JNIFunc(jptr, call, ...) (*(jptr))->call(jptr, ##__VA_ARGS__)
 
 typedef struct JAVA_MODULE_HANDLE_DATA_TAG
 {

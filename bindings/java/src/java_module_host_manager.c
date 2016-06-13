@@ -6,8 +6,8 @@
 #include <crtdbg.h>
 #endif
 
-#include "azure_c_shared_utility\lock.h"
-#include "azure_c_shared_utility\iot_logging.h"
+#include "azure_c_shared_utility/lock.h"
+#include "azure_c_shared_utility/iot_logging.h"
 #include "java_module_host_manager.h"
 
 JAVA_MODULE_HOST_MANAGER_HANDLE instance = NULL;

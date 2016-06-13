@@ -5,8 +5,10 @@
 #define JAVA_MODULE_HOST_H
 
 #include <stdbool.h>
+#ifdef _WIN32
 #include <cstdbool>
-#include "azure_c_shared_utility\vector.h"
+#endif
+#include "azure_c_shared_utility/vector.h"
 #include "java_module_host_manager.h"
 #include "module.h"
 

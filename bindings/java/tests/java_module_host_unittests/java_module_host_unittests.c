@@ -43,7 +43,7 @@ static TEST_MUTEX_HANDLE g_dllByDll;
 
 static bool malloc_will_fail = false;
 
-static bool module_manager_count = 0;
+static int module_manager_count = 0;
 static JAVA_MODULE_HOST_MANAGER_HANDLE global_manager = NULL;
 
 static JNIEnv* global_env = NULL;
