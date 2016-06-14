@@ -30,19 +30,20 @@ public class Sensor extends GatewayModule {
             while(!this.threadStop) {
                 try {
                     HashMap<String, String> map = new HashMap<>();
-                    map.put("Source", new Long(this.getAddress()).toString());
+                    map.put("source", "Sensor");
+                    map.put("macAddress", "01:01:01:01:01:01");
 
                     //Get "sensor" reading
                     Double sensorReading = Math.random() * 50;
 
                     //Construct message
-                    Message m = new Message(sensorReading.toString(), map);
+                    Message m = new Message(sensorReading.toString().getBytes(), map);
 
                     //Publish message
                     this.publishMessage(m);
 
                     //Sleep
-                    Thread.sleep(500);
+                    Thread.sleep(5000);
                 } catch (IOException e) {
                     e.printStackTrace();
                 } catch (InterruptedException e) {

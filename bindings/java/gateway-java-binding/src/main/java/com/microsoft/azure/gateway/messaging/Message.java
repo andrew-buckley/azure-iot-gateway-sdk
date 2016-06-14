@@ -17,12 +17,11 @@ public final class Message {
 
     /**
      *
-     * @param content The message content as a string.
-     * @param properties The string to string map of peroperties for this message.
+     * @param content The message content as a byte array.
+     * @param properties The string to string map of properties for this message.
      */
-    public Message(String content, Map<String, String> properties){
-        /*Codes_SRS_JAVA_MESSAGE_14_003: [ The constructor shall save the message content and properties map. ]*/
-        this.content = content != null ? content.getBytes() : new byte[0];
+    public Message(byte[] content, Map<String, String> properties){
+        this.content = content != null ? content : new byte[0];
         this.properties = properties != null ? properties : new HashMap<String, String>();
     }
 

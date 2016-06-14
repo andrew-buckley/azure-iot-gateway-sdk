@@ -45,7 +45,7 @@ public class MessageTest {
         final Map<String, String> properties = new HashMap<String, String>();
         setDefaultProperties(properties, 5);
 
-        Message message = new Message(content, properties);
+        Message message = new Message(content.getBytes(), properties);
 
         byte[] actualContent = message.getContent();
         Map<String, String> actualProperties = message.getProperties();
@@ -60,7 +60,7 @@ public class MessageTest {
         final String content = "test-content";
         final Map<String, String> properties = null;
 
-        Message message = new Message(content, properties);
+        Message message = new Message(content.getBytes(), properties);
 
         byte[] actualContent = message.getContent();
         Map<String, String> actualProperties = message.getProperties();
@@ -141,7 +141,7 @@ public class MessageTest {
         properties.put("BleedingEdge", "rocks");
         properties.put("Azure IoT Gateway is", "awesome");
 
-        Message m = new Message("34", properties);
+        Message m = new Message("34".getBytes(), properties);
 
         byte[] actualByteArray = m.toByteArray();
 

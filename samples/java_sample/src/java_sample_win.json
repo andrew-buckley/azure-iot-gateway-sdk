@@ -4,7 +4,41 @@
       "module name": "java_module_host",
       "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
       "args": {
-        "class_path": "..\\..\\..\\samples\\java_sample\\java_modules\\Printer\\target\\sample-printer-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Sensor\\target\\sample-sensor-module-1.0-SNAPSHOT-with-deps.jar",
+        "class_path": "..\\..\\..\\samples\\java_sample\\java_modules\\IotHubAmqpModule\\target\\iothub-amqp-gateway-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Printer\\target\\sample-printer-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Sensor\\target\\sample-sensor-module-1.0-SNAPSHOT-with-deps.jar",
+        "library_path": "..\\..\\bindings\\java\\Debug",
+        "class_name": "IotHubAmqpModule",
+        "args": {
+          "IoTHubName": "CKPIoTHub",
+          "IoTHubSuffix": "azure-devices.net"
+        },
+        "jvm_options": {
+          "version": 8,
+          "debug": true,
+          "debug_port": 8118,
+          "verbose": false,
+          "additional_options": [
+            "-Djava.version=1.8"
+          ]
+        }
+      }
+    },
+    {
+            "module name" : "mapping",
+            "module path" : "..\\..\\..\\modules\\identitymap\\Debug\\identity_map_hl.dll",
+            "args" : 
+            [
+                {
+                    "macAddress" : "01:01:01:01:01:01",
+                    "deviceId"   : "andrew_device_1",
+                    "deviceKey"  : "4QzTSaOrz299exTP3k+ii3kzmjLcEiSKClZ9VJDiLA0="
+                }
+            ]
+        },
+    {
+      "module name": "java_module_host",
+      "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
+      "args": {
+        "class_path": "..\\..\\..\\samples\\java_sample\\java_modules\\IotHubAmqpModule\\target\\iothub-amqp-gateway-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Printer\\target\\sample-printer-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Sensor\\target\\sample-sensor-module-1.0-SNAPSHOT-with-deps.jar",
         "library_path": "..\\..\\bindings\\java\\Debug",
         "class_name": "Printer",
         "args": null,
@@ -12,7 +46,7 @@
           "version": 8,
           "debug": false,
           "debug_port": 8118,
-          "verbose": true,
+          "verbose": false,
           "additional_options": [
             "-Djava.version=1.8"
           ]
@@ -23,7 +57,7 @@
       "module name": "java_module_host",
       "module path": "..\\..\\bindings\\java\\Debug\\java_module_host_hl.dll",
       "args": {
-        "class_path": "..\\..\\..\\samples\\java_sample\\java_modules\\Printer\\target\\sample-printer-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Sensor\\target\\sample-sensor-module-1.0-SNAPSHOT-with-deps.jar",
+        "class_path": "..\\..\\..\\samples\\java_sample\\java_modules\\IotHubAmqpModule\\target\\iothub-amqp-gateway-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Printer\\target\\sample-printer-module-1.0-SNAPSHOT-with-deps.jar;..\\..\\..\\samples\\java_sample\\java_modules\\Sensor\\target\\sample-sensor-module-1.0-SNAPSHOT-with-deps.jar",
         "library_path": "..\\..\\bindings\\java\\Debug",
         "class_name": "Sensor",
         "args": null,
@@ -41,7 +75,7 @@
     {
       "module name": "logger_hl",
       "module path": "..\\..\\modules\\logger\\Debug\\logger_hl.dll",
-      "args": { "filename": "F:\\Projects\\gateway-fork\\samples\\java_sample\\log.txt" }
+      "args": { "filename": "..\\..\\..\\samples\\java_sample\\log.txt" }
     }
   ]
 }

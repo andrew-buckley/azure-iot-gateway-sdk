@@ -90,7 +90,7 @@ mkdir %cmake-root%
 rem no error checking
 
 pushd %cmake-root%
-cmake -Drun_e2e_tests:BOOL=%CMAKE_run_e2e_tests% -Denable_java_binding:BOOL=%enable_java_binding% "%build-root%" "%build-root%"
+cmake -Drun_e2e_tests:BOOL=%CMAKE_run_e2e_tests% -Denable_java_binding:BOOL=%enable-java-binding% "%build-root%" "%build-root%"
 if not %errorlevel%==0 exit /b %errorlevel%
 
 msbuild /m /p:Configuration="%build-config%" /p:Platform="%build-platform%" azure_iot_gateway_sdk.sln
