@@ -35,12 +35,10 @@ public class IotHubAmqpModule extends GatewayModule{
         this.config = gson.fromJson(configuration, IotHubAmqpModuleConfiguration.class);
     }
 
-    public boolean sendMessage(Message message, String deviceID, String deviceKey){
-        //Attempt to retrieve a client for this device
+    public boolean register(String deviceID, String deviceKey){
         DeviceClient client = this.clients.get(deviceID);
 
-        //If no device client yet exists for this deviceID, create one.
-        if(client == null){
+        if(client == null) {
             try {
                 String connectionString = this.constructConnectionString(this.config.getIotHubName(), this.config.getIotHubSuffix(), deviceID, deviceKey);
                 client = new DeviceClient(connectionString, IotHubClientProtocol.AMQPS);
@@ -49,12 +47,23 @@ public class IotHubAmqpModule extends GatewayModule{
                 client.open();
                 clients.put(deviceID, client);
             } catch (URISyntaxException e) {
-                System.out.println("URISyntaxException");
                 return false;
             } catch (IOException e) {
-                System.out.println("IOException");
                 return false;
             }
+        }
+
+        return true;
+    }
+
+    public boolean sendMessage(Message message, String deviceID, String deviceKey){
+        //Attempt to retrieve a client for this device
+        DeviceClient client = this.clients.get(deviceID);
+
+        //If no device client yet exists for this deviceID return false
+        if(client == null){
+            System.out.println("Client for device (" + deviceID + ") is not registered.");
+            return false;
         }
 
         //Asynchronously send message
@@ -97,12 +106,18 @@ public class IotHubAmqpModule extends GatewayModule{
     @Override
     public void receive(Message message) {
         Map<String, String> properties = message.getProperties();
-        if(properties.containsKey("source") &&
-                properties.get("source").equals("mapping") &&
-                properties.containsKey("deviceName") &&
-                properties.containsKey("deviceKey")){
-            if(!this.sendMessage(message, properties.get("deviceName"), properties.get("deviceKey"))){
-                System.out.println("IotHubAmqpModule could not send message: " + message.toString());
+        if(properties.containsKey("source") && properties.get("source").equals("mapping") && properties.containsKey("deviceName") && properties.containsKey("deviceKey")){
+            String deviceName = properties.get("deviceName");
+            String deviceKey = properties.get("deviceKey");
+            if(properties.containsKey("messageType") && properties.get("messageType").equals("register")) {
+                if(!this.register(deviceName, deviceKey)){
+                    System.out.println("Failed to connect device (" + deviceName + ").");
+                }
+            }
+            else {
+                if (!this.sendMessage(message, deviceName, deviceKey)) {
+                    System.out.println("IotHubAmqpModule could not send message: " + message.toString());
+                }
             }
         }
     }
