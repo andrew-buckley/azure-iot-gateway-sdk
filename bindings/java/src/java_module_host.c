@@ -438,6 +438,66 @@ static void JavaModuleHost_Receive(MODULE_HANDLE module, MESSAGE_HANDLE message)
 
 }
 
+static void JavaModuleHost_Start(MODULE_HANDLE module)
+{
+	/*Codes_SRS_JAVA_MODULE_HOST_14_049: [This function shall do nothing if module is NULL.]*/
+	if (module != NULL)
+	{
+		JAVA_MODULE_HANDLE_DATA* moduleHandle = (JAVA_MODULE_HANDLE_DATA*)module;
+
+		/*Codes_SRS_JAVA_MODULE_HOST_14_050: [This function shall attach the JVM to the current thread.]*/
+		jint jni_result = JNIFunc(moduleHandle->jvm, AttachCurrentThread, (void**)(&(moduleHandle->env)), NULL);
+		if (jni_result != JNI_OK)
+		{
+			/*Codes_SRS_JAVA_MODULE_HOST_14_054: [This function shall exit if any JNI function fails.]*/
+			LogError("Could not attach the current thread to the JVM. (Result: %i)", jni_result);
+		}
+		else
+		{
+			/*Codes_SRS_JAVA_MODULE_HOST_14_051: [This function shall get the user-defined Java module class using the module parameter and get the start() method.]*/
+			jclass jModule_class = JNIFunc(moduleHandle->env, GetObjectClass, moduleHandle->module);
+			if (jModule_class == NULL)
+			{
+				/*Codes_SRS_JAVA_MODULE_HOST_14_054: [This function shall exit if any JNI function fails.]*/
+				LogError("Could not find class (%s) for the module Java object. start() will not be called on this object.", moduleHandle->moduleName);
+			}
+			else
+			{
+				jmethodID jModule_start = JNIFunc(moduleHandle->env, GetMethodID, jModule_class, MODULE_START_METHOD_NAME, MODULE_START_DESCRIPTOR);
+				jthrowable exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
+				if (jModule_start == NULL || exception)
+				{
+					/*Codes_SRS_JAVA_MODULE_HOST_14_054: [This function shall exit if any JNI function fails.]*/
+					LogError("Failed to find the %s start() method. start() will not be called on this object.", moduleHandle->moduleName);
+					JNIFunc(moduleHandle->env, ExceptionDescribe);
+					JNIFunc(moduleHandle->env, ExceptionClear);
+				}
+				else
+				{
+					/*Codes_SRS_JAVA_MODULE_HOST_14_052: [This function shall call the void start() method of the Java module object.]*/
+					CallVoidMethodInternal(moduleHandle->env, moduleHandle->module, jModule_start, 0);
+					exception = JNIFunc(moduleHandle->env, ExceptionOccurred);
+					if (exception)
+					{
+						/*Codes_SRS_JAVA_MODULE_HOST_14_054: [This function shall exit if any JNI function fails.]*/
+						LogError("Exception occurred in start() of %s.", moduleHandle->moduleName);
+						JNIFunc(moduleHandle->env, ExceptionDescribe);
+						JNIFunc(moduleHandle->env, ExceptionClear);
+					}
+				}
+			}
+
+			/*Codes_SRS_JAVA_MODULE_HOST_14_053: [This function shall detach the JVM from the current thread.]*/
+			jni_result = JNIFunc(moduleHandle->jvm, DetachCurrentThread);
+			if (jni_result != JNI_OK)
+			{
+				/*Codes_SRS_JAVA_MODULE_HOST_14_054: [This function shall exit if any JNI function fails.]*/
+				LogError("Could not detach the current thread from the JVM. (Result: %i)", jni_result);
+			}
+		}
+	}
+}
+
 JNIEXPORT jint JNICALL Java_com_microsoft_azure_gateway_core_Broker_publishMessage(JNIEnv* env, jobject jBroker, jlong broker_address, jlong module_address, jbyteArray serialized_message)
 {
 	/*Codes_SRS_JAVA_MODULE_HOST_14_048: [This function shall return a non - zero value if any underlying function call fails.]*/
@@ -859,7 +919,7 @@ static const MODULE_APIS JavaModuleHost_APIS =
 	JavaModuleHost_Create,
 	JavaModuleHost_Destroy,
 	JavaModuleHost_Receive,
-	NULL
+	JavaModuleHost_Start
 };
 
 #ifdef BUILD_MODULE_TYPE_STATIC
