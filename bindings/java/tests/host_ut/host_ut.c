@@ -435,6 +435,7 @@ void on_umock_c_error(UMOCK_C_ERROR_CODE error_code)
 static pfModule_Create  JavaModuleHost_Create = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Destroy JavaModuleHost_Destroy = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 static pfModule_Receive JavaModuleHost_Receive = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
+static pfModule_Start	JavaModuleHost_Start = NULL; /*gets assigned in TEST_SUITE_INITIALIZE*/
 
 IMPLEMENT_UMOCK_C_ENUM_TYPE(JAVA_MODULE_HOST_MANAGER_RESULT, JAVA_MODULE_HOST_MANAGER_RESULT_VALUES);
 IMPLEMENT_UMOCK_C_ENUM_TYPE(BROKER_RESULT, BROKER_RESULT_VALUES);
@@ -452,6 +453,7 @@ TEST_SUITE_INITIALIZE(TestClassInitialize)
 	JavaModuleHost_Create = apis.Module_Create;
 	JavaModuleHost_Destroy = apis.Module_Destroy;
 	JavaModuleHost_Receive = apis.Module_Receive;
+	JavaModuleHost_Start = apis.Module_Start;
 
 	umock_c_init(on_umock_c_error);
 	umocktypes_charptr_register_types();
@@ -2287,6 +2289,23 @@ TEST_FUNCTION(JavaModuleHost_Destroy_CallVoidMethod_fails)
 
 	umock_c_negative_tests_deinit();
 }
+
+//=============================================================================
+//JavaModuleHost_Start tests
+//=============================================================================
+//TEST_FUNCTION(JavaModuleHost_Start_success)
+//{
+//	//Arrange
+//
+//	MODULE_HANDLE module = JavaModuleHost_Create((BROKER_HANDLE)0x42, &config);
+//	umock_c_reset_all_calls();
+//
+//	//Act
+//	JavaModuleHost_Start(module);
+//
+//	//Assert
+//}
+
 
 //=============================================================================
 //Java_com_microsoft_azure_gateway_core_Broker_publishMessage tests
